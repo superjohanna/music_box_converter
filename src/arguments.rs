@@ -1,4 +1,4 @@
-// CLAP
+// clap
 use clap::{Arg, ArgMatches, Command};
 
 pub fn get_args() -> ArgMatches {
@@ -8,7 +8,7 @@ pub fn get_args() -> ArgMatches {
         .arg_required_else_help(true)
         .author("Johanna Wehner, superjohannaa@gmail.com")
         .arg(
-            Arg::new("input file")
+            Arg::new("io_in")
                 .short('i')
                 .long("input")
                 .help("Specifies the input file")
@@ -17,7 +17,7 @@ pub fn get_args() -> ArgMatches {
                 .required(true),
         )
         .arg(
-            Arg::new("output file")
+            Arg::new("io_out")
                 .short('o')
                 .long("output")
                 .help("Specifies the output file")
@@ -35,14 +35,25 @@ pub fn get_args() -> ArgMatches {
                 .required(false),
         )
         .arg(
-            Arg::new("music box file")
+            Arg::new("io_box")
                 .short('b')
                 .long("box")
-                .help("Specifies which music box file to use")
-                .default_value("./boxes/default.box")
+                .help("Specifies which music box from the box.json file to use")
+                .default_value("1_note")
                 .num_args(1)
                 .value_name("FILE")
                 .required(false),
         )
+        .help_template(HELP_TEMPLATE)
         .get_matches()
 }
+
+const HELP_TEMPLATE: &str = r#"{name} (v{version}) by {author}
+
+{about}
+
+{usage-heading}    
+{usage}
+
+{all-args}
+"#;

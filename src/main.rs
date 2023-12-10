@@ -1,6 +1,8 @@
+#![allow(unused)]
 // Modules
 pub mod arguments;
 pub mod error;
+pub mod music;
 pub mod music_box_converter;
 pub mod prelude;
 
@@ -11,7 +13,7 @@ use crate::prelude::*;
 
 fn main() -> Result<()> {
     let args = get_args();
-    let converter = MusicBoxConverter::new(args);
+    let mut converter = MusicBoxConverter::new(args);
     converter.run()?;
     Ok(())
 }
