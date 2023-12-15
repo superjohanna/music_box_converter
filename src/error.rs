@@ -11,4 +11,6 @@ pub enum Error {
     IOError(Box<io::Error>),
     #[error("Serialization Error {0}")]
     SerdeJsonError(Box<serde_json::Error>),
+    #[error("Midi Error {0}")]
+    MidiError(Box<midly::Error>),
 }

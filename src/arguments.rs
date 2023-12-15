@@ -26,22 +26,43 @@ pub fn get_args() -> ArgMatches {
                 .required(true),
         )
         .arg(
+            Arg::new("io_box")
+                .short('f')
+                .long("boxes")
+                .help("Specifies which music box file to use")
+                .default_value("./box.json")
+                .num_args(1)
+                .value_name("FILE")
+                .required(false),
+        )
+        .arg(
+            Arg::new("io_svg_settings")
+                .short('F')
+                .long("svg-settings")
+                .help("Specifies which svg settings file to use")
+                .default_value("./svg_settings.json")
+                .num_args(1)
+                .value_name("FILE")
+                .required(false),
+        )
+        .arg(
+            Arg::new("box")
+                .short('b')
+                .long("box")
+                .help("Specifies which music box from the box.json file to use")
+                .default_value("30_note")
+                .num_args(1)
+                .value_name("FILE")
+                .required(false),
+        )
+        .arg(
             Arg::new("verbosity")
                 .short('v')
                 .long("verbose")
                 .help("Increases verbosity. Helpful for debugging")
+                .default_value("false")
                 .num_args(0)
                 .value_name("verbose")
-                .required(false),
-        )
-        .arg(
-            Arg::new("io_box")
-                .short('b')
-                .long("box")
-                .help("Specifies which music box from the box.json file to use")
-                .default_value("1_note")
-                .num_args(1)
-                .value_name("FILE")
                 .required(false),
         )
         .help_template(HELP_TEMPLATE)

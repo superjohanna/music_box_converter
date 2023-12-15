@@ -1,7 +1,10 @@
-// serde_derive
-use serde_derive::{Deserialize, Serialize};
+// Modules
+pub mod functions;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+// serde_derive
+use serde_derive::Deserialize;
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub enum Note {
     C(u8),
     CS(u8),

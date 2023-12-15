@@ -1,0 +1,7 @@
+{
+    "staff_offset": 4,
+    "hole_radius": 4,
+    "staff_bounding_box_colour": "#abcdef",
+    "staff_line_colour": "#abcdef",
+    "hole_colour": "#abcdef"
+}
