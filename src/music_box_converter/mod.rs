@@ -11,7 +11,11 @@ use midly::Smf;
 use svg::Document;
 
 // Internal
-use crate::{music::music_box::MusicBox, settings::svg::SvgSettings};
+use crate::{
+    music::{meta_information::MetaInformation, music_box::MusicBox},
+    settings::svg::SvgSettings,
+    vec2::Vec2,
+};
 
 #[derive(Debug)]
 pub struct MusicBoxConverter {
@@ -20,7 +24,9 @@ pub struct MusicBoxConverter {
     verbose: bool,
     music_box: Option<MusicBox>,
     svg_settings: Option<SvgSettings>,
-    svg: Document,
+    svg: Vec<Document>,
+    meta: Option<MetaInformation>,
+    scale: Option<Vec2<f64>>,
 }
 
 impl MusicBoxConverter {
@@ -31,7 +37,9 @@ impl MusicBoxConverter {
             verbose,
             music_box: Option::None,
             svg_settings: Option::None,
-            svg: Document::new(),
+            svg: Vec::<Document>::new(),
+            meta: Option::None,
+            scale: Option::Some(Vec2::<f64>::new()),
         }
     }
 }

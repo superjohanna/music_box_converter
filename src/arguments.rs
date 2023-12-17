@@ -20,7 +20,7 @@ pub fn get_args() -> ArgMatches {
             Arg::new("io_out")
                 .short('o')
                 .long("output")
-                .help("Specifies the output file")
+                .help(r#"Specifies the output file without file extension (eg. "/out/attempt_one" creates files with scheme "/out/attempt_one_{index}.svg)"#)
                 .num_args(1)
                 .value_name("FILE")
                 .required(true),
