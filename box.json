@@ -99,6 +99,7 @@
     {
         "name": "2_note",
         "strip_height_mm": 4,
+        "min_note_distance_mm": 5,
         "notes": [
             {
                 "A": 4

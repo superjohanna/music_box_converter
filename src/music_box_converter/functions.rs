@@ -9,12 +9,15 @@ use midly::{Smf, Track, TrackEvent, TrackEventKind};
 
 // serde
 use serde::{Serialize, Serializer};
-use svg::{Document, Node};
+use svg::{
+    node::element::{path::Data, Path},
+    Document, Node,
+};
 
 // Internal
 use super::MusicBoxConverter;
 use crate::{
-    music::{meta_information::MetaInformation, music_box::MusicBox},
+    music::{self, meta_information::MetaInformation, music_box::MusicBox},
     prelude::*,
     settings::svg::SvgSettings,
     vec2::Vec2,
@@ -23,11 +26,12 @@ use crate::{
 impl MusicBoxConverter {
     pub fn run(mut self) -> Result<()> {
         self.choose_music_box()?;
-        self.load_svg_settings()?;
+        self.load_settings()?;
         // We can't make smf and bytes part of the MusicBoxConverter Struct because smf references bytes, so they need to have the same lifetime. ARGH!
         let bytes = self.get_bytes()?;
         let smf = Self::get_smf(&bytes)?;
-        self.setup_document(&smf)?;
+        self.set_scale_factor_and_meta(&smf)?;
+        self.draw_document(&smf)?;
         self.output_document()?;
 
         Ok(())
@@ -72,7 +76,7 @@ impl MusicBoxConverter {
     }
 
     /// Deserializes ./svg_settings.json and assigns the deserialized SvgSettings to self.svg_settings
-    fn load_svg_settings(&mut self) -> Result<()> {
+    fn load_settings(&mut self) -> Result<()> {
         let file = match File::open(self.args.get_one::<String>("io_svg_settings").unwrap()) {
             Ok(t) => t,
             Err(e) => return Err(Error::IOError(Box::new(e))),
@@ -112,39 +116,94 @@ impl MusicBoxConverter {
         Ok(smf)
     }
 
-    /// Replaces the current document and adds the base layout
-    fn setup_document(&mut self, smf: &Smf) -> Result<()> {
-        let settings = self.svg_settings.clone().unwrap();
+    /// Sets the scale_factor and meta in the self
+    fn set_scale_factor_and_meta(&mut self, smf: &Smf) -> Result<()> {
+        // ----- Get Meta -----
         self.meta = Option::Some(MetaInformation::gather_meta(&smf.tracks[0]));
-        let mut scale_factor = Vec2::<f64>::new();
-        // How much do we have to scale the notes for it to be compatible with the music box
-        scale_factor.x = <u32 as Into<f64>>::into(self.meta.as_ref().unwrap().min_distance)
-            / self.music_box.as_ref().unwrap().min_note_distance_mm;
+        let meta = self.meta.as_ref().unwrap();
 
-        // How much space there is between two lines
-        scale_factor.y = self.music_box.as_ref().unwrap().get_scale_factor_y();
+        // ----- Get ScaleFactor -----
+        let music_box = self.music_box.as_ref().unwrap();
 
-        todo!();
-        // Calculate how much fits onto one page
-        // Place Notes into their own Vec<Vec<Note>>
-        //                             |   |
-        //                             |   Notes
-        //                             Page
-        // Then iterate over pages with the fill_document method (needs renaming) which iterates over notes and returns a document
+        // X: How much do we have to scale the notes for it to be compatible with the music box
+        // Y: How much space there is between two lines
+        let mut scale_factor = Vec2::<f64>::new_val(
+            <u32 as Into<f64>>::into(meta.min_distance) / music_box.min_note_distance_mm,
+            music_box.get_scale_factor_y(),
+        );
+
+        self.scale = Option::Some(scale_factor);
+
+        Ok(())
+    }
+
+    /// Replaces the current document and adds the base layout
+    fn draw_document(&mut self, smf: &Smf) -> Result<()> {
+        // For reference
+        let meta = self.meta.as_ref().unwrap();
+        let scale_factor = self.scale.clone().unwrap();
+
+        // Output
+        let mut notes = Vec::<Vec<TrackEvent>>::new();
+        let settings = self.svg_settings.as_ref().unwrap();
+        notes.push(Vec::<TrackEvent>::new());
+
+        // For the loop
+        let length_const: f64 = (2f64 * settings.staff_offset_mm as f64).clone();
+        let mut length: f64 = length_const;
+
+        for event in &smf.tracks[0] {
+            if f64::from(u32::from(event.delta)) * scale_factor.y + length > PAPER_SIZE.x {
+                self.setup_page(notes.last().unwrap())?;
+                notes.push(Vec::<TrackEvent>::new());
+                length = length_const;
+            }
+
+            notes.last_mut().unwrap().push(event.clone());
+        }
+        self.setup_page(notes.last().unwrap());
+
+        for (i, page) in notes.iter().enumerate() {
+            self.draw_notes(&notes[i], i as u64)?;
+        }
+
+        Ok(())
+    }
+
+    /// Gets called by draw_document(). Do not call manually
+    fn setup_page(&mut self, events: &Vec<TrackEvent>) -> Result<()> {
+        self.svg.push(Document::new());
+        let mut svg = self.svg.last_mut().unwrap();
+        let music_box = self.music_box.as_ref().unwrap();
+        let settings = self.svg_settings.as_ref().unwrap();
+        let scale_factor = self.scale.as_ref().unwrap();
+        let mut length = 0u32;
+        for event in events {
+            length += u32::from(event.delta);
+        }
+
+        // Note lines
+
+        for note_index in 0..music_box.note_count() {
+            let current_pos = settings.staff_offset_mm + (note_index as f64 * scale_factor.y);
+            let data = Data::new()
+                .move_to((settings.staff_offset_mm, current_pos))
+                .line_to((length, current_pos))
+                .close();
+
+            let path = Path::new()
+                .set("fill", "none")
+                .set("stroke", settings.staff_line_colour.clone())
+                .set("stroke-width", settings.staff_line_thickness_mm)
+                .set("d", data);
+            svg.append(path);
+        }
 
         Ok(())
     }
 
     /// Fills the current document with the notes
-    fn fill_document(&mut self, smf: &Smf) -> Result<()> {
-        for track in smf.tracks.clone() {
-            for track_event in track {
-                match track_event.kind {
-                    TrackEventKind::Midi { .. } => (),
-                    _ => continue,
-                }
-            }
-        }
+    fn draw_notes(&mut self, notes: &Vec<TrackEvent>, i: u64) -> Result<()> {
         Ok(())
     }
 
@@ -157,7 +216,7 @@ impl MusicBoxConverter {
             Some(t) => t,
         };
 
-        match fs::create_dir_all(path) {
+        match fs::create_dir_all(parent) {
             Ok(t) => (),
             Err(e) => return Err(Error::IOError(Box::new(e))),
         };
@@ -178,3 +237,8 @@ impl MusicBoxConverter {
         Ok(())
     }
 }
+
+pub const PAPER_SIZE: Vec2<f64> = Vec2 {
+    x: 297f64,
+    y: 210f64,
+};

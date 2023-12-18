@@ -14,3 +14,9 @@ impl<T: Default> Vec2<T> {
         }
     }
 }
+
+impl<T> Vec2<T> {
+    pub fn new_val(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
