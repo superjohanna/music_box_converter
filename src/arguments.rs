@@ -20,7 +20,7 @@ pub fn get_args() -> ArgMatches {
             Arg::new("io_out")
                 .short('o')
                 .long("output")
-                .help(r#"Specifies the output file without file extension (eg. "/out/attempt_one" creates files with scheme "/out/attempt_one_{index}.svg)"#)
+                .help("Specifies which folder to output to")
                 .num_args(1)
                 .value_name("FILE")
                 .required(true),
@@ -63,6 +63,15 @@ pub fn get_args() -> ArgMatches {
                 .default_value("false")
                 .num_args(0)
                 .value_name("verbose")
+                .required(false),
+        )
+        .arg(
+            Arg::new("force")
+                .long("force")
+                .help("Forces output in cwd. Not recommended due to amount of files")
+                .default_value("false")
+                .num_args(0)
+                .value_name("force")
                 .required(false),
         )
         .help_template(HELP_TEMPLATE)

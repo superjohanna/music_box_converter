@@ -1,7 +1,7 @@
 use super::MetaInformation;
 
 impl MetaInformation {
-    pub fn gather_meta(track: &Vec<midly::TrackEvent>) -> Self {
+    pub fn gather_meta(track: &[midly::TrackEvent]) -> Self {
         let mut info: Self = Self {
             length: u64::MIN,
             min_distance: u32::MAX,

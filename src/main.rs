@@ -6,8 +6,8 @@ pub mod music;
 pub mod music_box_converter;
 pub mod prelude;
 pub mod settings;
-pub mod vec2;
 pub mod svg;
+pub mod vec2;
 
 // Internal
 use crate::arguments::get_args;
@@ -18,5 +18,9 @@ fn main() -> Result<()> {
     let args = get_args();
     let mut converter = MusicBoxConverter::new(args);
     converter.run()?;
+
+    /* let thisdir = std::fs::canonicalize(std::path::PathBuf::from("./out/"));
+    println!("{:?}", thisdir); */
+
     Ok(())
 }

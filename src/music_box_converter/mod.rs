@@ -7,17 +7,15 @@ use clap::ArgMatches;
 // midly
 use midly::Smf;
 
-// svg
-use svg::Document;
-
 // Internal
 use crate::{
     music::{meta_information::MetaInformation, music_box::MusicBox},
     settings::svg::SvgSettings,
+    svg::document::Document,
     vec2::Vec2,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MusicBoxConverter {
     args: ArgMatches,
     // Verbose is seperate so we don't have to look it up a lot
@@ -31,7 +29,7 @@ pub struct MusicBoxConverter {
 
 impl MusicBoxConverter {
     pub fn new(args: ArgMatches) -> Self {
-        let verbose = args.get_one::<bool>("verbosity").unwrap().to_owned();
+        let verbose = args.get_flag("verbosity").to_owned();
         Self {
             args,
             verbose,
@@ -39,7 +37,7 @@ impl MusicBoxConverter {
             svg_settings: Option::None,
             svg: Vec::<Document>::new(),
             meta: Option::None,
-            scale: Option::Some(Vec2::<f64>::new()),
+            scale: Option::Some(Vec2::<f64>::default()),
         }
     }
 }

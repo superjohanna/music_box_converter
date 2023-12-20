@@ -9,10 +9,6 @@ use midly::{Smf, Track, TrackEvent, TrackEventKind};
 
 // serde
 use serde::{Serialize, Serializer};
-use svg::{
-    node::element::{path::Data, Path},
-    Document, Node,
-};
 
 // Internal
 use super::MusicBoxConverter;
@@ -20,6 +16,7 @@ use crate::{
     music::{self, meta_information::MetaInformation, music_box::MusicBox},
     prelude::*,
     settings::svg::SvgSettings,
+    svg::{circle::Circle, document::Document, line::Line},
     vec2::Vec2,
 };
 
@@ -107,7 +104,7 @@ impl MusicBoxConverter {
     }
 
     /// Returns a Smf which links to the bytes which were passed
-    fn get_smf(bytes: &Vec<u8>) -> Result<Smf> {
+    fn get_smf(bytes: &[u8]) -> Result<Smf> {
         let smf: Smf = match Smf::parse(bytes) {
             Ok(t) => t,
             Err(e) => return Err(Error::MidiError(Box::new(e))),
@@ -127,7 +124,7 @@ impl MusicBoxConverter {
 
         // X: How much do we have to scale the notes for it to be compatible with the music box
         // Y: How much space there is between two lines
-        let mut scale_factor = Vec2::<f64>::new_val(
+        let mut scale_factor = Vec2::<f64>::new(
             <u32 as Into<f64>>::into(meta.min_distance) / music_box.min_note_distance_mm,
             music_box.get_scale_factor_y(),
         );
@@ -149,22 +146,25 @@ impl MusicBoxConverter {
         notes.push(Vec::<TrackEvent>::new());
 
         // For the loop
-        let length_const: f64 = (2f64 * settings.staff_offset_mm as f64).clone();
+        let length_const: f64 = 2f64 * settings.staff_offset_mm;
         let mut length: f64 = length_const;
 
         for event in &smf.tracks[0] {
             if f64::from(u32::from(event.delta)) * scale_factor.y + length > PAPER_SIZE.x {
                 self.setup_page(notes.last().unwrap())?;
+
                 notes.push(Vec::<TrackEvent>::new());
                 length = length_const;
             }
 
-            notes.last_mut().unwrap().push(event.clone());
+            notes.last_mut().unwrap().push(*event);
+
+            todo!("Check if the notes can even be played");
         }
-        self.setup_page(notes.last().unwrap());
+        self.setup_page(notes.last().unwrap())?;
 
         for (i, page) in notes.iter().enumerate() {
-            self.draw_notes(&notes[i], i as u64)?;
+            self.draw_notes(&notes[i], i)?;
         }
 
         Ok(())
@@ -172,67 +172,56 @@ impl MusicBoxConverter {
 
     /// Gets called by draw_document(). Do not call manually
     fn setup_page(&mut self, events: &Vec<TrackEvent>) -> Result<()> {
-        self.svg.push(Document::new());
+        self.svg.push(Document::default());
         let mut svg = self.svg.last_mut().unwrap();
         let music_box = self.music_box.as_ref().unwrap();
         let settings = self.svg_settings.as_ref().unwrap();
         let scale_factor = self.scale.as_ref().unwrap();
-        let mut length = 0u32;
+        let mut length = 0u64;
         for event in events {
-            length += u32::from(event.delta);
+            length += u32::from(event.delta) as u64;
         }
 
         // Note lines
 
         for note_index in 0..music_box.note_count() {
             let current_pos = settings.staff_offset_mm + (note_index as f64 * scale_factor.y);
-            let data = Data::new()
-                .move_to((settings.staff_offset_mm, current_pos))
-                .line_to((length, current_pos))
-                .close();
-
-            let path = Path::new()
-                .set("fill", "none")
-                .set("stroke", settings.staff_line_colour.clone())
-                .set("stroke-width", settings.staff_line_thickness_mm)
-                .set("d", data);
-            svg.append(path);
+            svg.append(
+                Line::new_builder()
+                    .set_start(settings.staff_offset_mm, current_pos)
+                    .set_end(length as f64, current_pos)
+                    .set_stroke(settings.staff_line_colour.clone())
+                    .set_stroke_width(3f64)
+                    .finish(),
+            )
         }
 
         Ok(())
     }
 
     /// Fills the current document with the notes
-    fn draw_notes(&mut self, notes: &Vec<TrackEvent>, i: u64) -> Result<()> {
+    fn draw_notes(&mut self, notes: &[TrackEvent], i: usize) -> Result<()> {
+        for note in notes {
+            todo!("Finish this...");
+            //self.svg[i].append(Circle::new_builder().set_centre(x, y))
+        }
         Ok(())
     }
 
     /// Outputs the current document to the specified output file
     fn output_document(&self) -> Result<()> {
-        let path = std::path::Path::new(self.args.get_one::<String>("io_out").unwrap());
-
-        let parent = match path.parent() {
-            None => return Err(Error::Generic("Invalid output path".to_string())),
-            Some(t) => t,
-        };
-
-        match fs::create_dir_all(parent) {
-            Ok(t) => (),
+        let mut path_string = self.args.get_one::<String>("io_out").unwrap().to_owned();
+        path_string = path_string.replace(' ', "");
+        let path_buf = std::path::PathBuf::from(path_string);
+        let path_canonical = match std::fs::canonicalize(path_buf) {
+            Ok(t) => t,
             Err(e) => return Err(Error::IOError(Box::new(e))),
         };
 
-        let path_string = self.args.get_one::<String>("io_out").unwrap().to_owned();
-
         for (i, svg) in self.svg.iter().enumerate() {
-            let mut path_string_i = path_string.clone();
-            path_string_i.push('_');
-            path_string_i.push_str(i.to_string().as_ref());
-            path_string_i.push_str(".svg");
-
-            match svg::save(path_string_i, svg) {
-                Ok(t) => (),
-                Err(e) => return Err(Error::IOError(Box::new(e))),
-            }
+            let mut path_i = path_canonical.clone();
+            path_i.push(i.to_string() + ".svg");
+            svg.save(std::path::Path::new(&path_i))?
         }
         Ok(())
     }
