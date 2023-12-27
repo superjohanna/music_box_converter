@@ -36,8 +36,9 @@ impl Default for Document {
 }
 
 impl Document {
-    pub fn append(&mut self, child: Box<dyn Child>) {
+    pub fn append(&mut self, child: Box<dyn Child>) -> &mut Self {
         self.children.push(child);
+        self
     }
 
     pub fn print(&self) -> String {

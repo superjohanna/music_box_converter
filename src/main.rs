@@ -19,8 +19,5 @@ fn main() -> Result<()> {
     let mut converter = MusicBoxConverter::new(args);
     converter.run()?;
 
-    /* let thisdir = std::fs::canonicalize(std::path::PathBuf::from("./out/"));
-    println!("{:?}", thisdir); */
-
     Ok(())
 }

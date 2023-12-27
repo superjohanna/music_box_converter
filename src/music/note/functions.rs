@@ -5,9 +5,9 @@ use midly::MidiMessage;
 use super::Note;
 
 impl Note {
-    pub fn from_midi_message(message: MidiMessage) -> Option<Self> {
+    pub fn from_midi_message(message: &MidiMessage) -> Option<Self> {
         match message {
-            MidiMessage::NoteOn { key, .. } => Self::from_midi_pitch(key),
+            MidiMessage::NoteOn { key, .. } => Self::from_midi_pitch(*key),
             _ => None,
         }
     }

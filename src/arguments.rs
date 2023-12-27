@@ -68,7 +68,7 @@ pub fn get_args() -> ArgMatches {
         .arg(
             Arg::new("force")
                 .long("force")
-                .help("Forces output in cwd. Not recommended due to amount of files")
+                .help("Forces output in cwd. Not recommended due to amount of possible files")
                 .default_value("false")
                 .num_args(0)
                 .value_name("force")

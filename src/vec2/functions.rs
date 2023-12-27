@@ -67,5 +67,3 @@ impl<T: std::ops::Div<Output = T> + std::clone::Clone> std::ops::DivAssign for V
         *self = self.clone() / rhs;
     }
 }
-
-
