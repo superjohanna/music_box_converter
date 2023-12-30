@@ -36,11 +36,11 @@ pub fn get_args() -> ArgMatches {
                 .required(false),
         )
         .arg(
-            Arg::new("io_svg_settings")
-                .short('F')
-                .long("svg-settings")
-                .help("Specifies which svg settings file to use")
-                .default_value("./svg_settings.json")
+            Arg::new("io_settings")
+                .short('S')
+                .long("settings")
+                .help("Specifies which settings file to use")
+                .default_value("./settings.json")
                 .num_args(1)
                 .value_name("FILE")
                 .required(false),

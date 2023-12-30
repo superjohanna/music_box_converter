@@ -2,7 +2,7 @@
 use serde_derive::Deserialize;
 
 #[derive(Clone, Debug, Deserialize, Default)]
-pub struct SvgSettings {
+pub struct Settings {
     // Sizes
     pub staff_offset_mm: f64,
     pub hole_radius_mm: f64,
@@ -14,4 +14,7 @@ pub struct SvgSettings {
     pub staff_bounding_box_colour: String,
     pub staff_line_colour: String,
     pub hole_colour: String,
+
+    // Midi
+    pub note_min_delay_ticks: u64,
 }
