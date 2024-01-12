@@ -4,6 +4,9 @@ use std::{
     io::{BufReader, Read},
 };
 
+// simplelog
+use simplelog::*;
+
 // midly
 use midly::{MidiMessage, Smf, Track as MidiTrack, TrackEvent, TrackEventKind};
 
@@ -13,15 +16,22 @@ use serde::{Serialize, Serializer};
 // Internal
 use super::MusicBoxConverter;
 use crate::{
-    music::{self, event::Event, music_box::MusicBox, note::Note, track::Track},
+    music::{
+        self,
+        event::Event,
+        music_box::MusicBox,
+        note::Note,
+        track::{self, Track},
+    },
     prelude::*,
-    settings::settings::Settings,
+    settings::Settings,
     svg::{circle::Circle, document::Document, line::Line},
     vec2::Vec2,
 };
 
 impl MusicBoxConverter {
     pub fn run(mut self) -> Result<()> {
+        self.choose_log_level()?;
         self.choose_music_box()?;
         self.load_settings()?;
         self.get_abs()?;
@@ -32,9 +42,43 @@ impl MusicBoxConverter {
         Ok(())
     }
 
+    fn choose_log_level(&mut self) -> Result<()> {
+        let verbosity = self.args.get_count("verbosity");
+        let quiet = self.args.get_flag("quiet");
+        if quiet {
+            TermLogger::init(
+                LevelFilter::Off,
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Auto,
+            );
+            Ok(())
+        } else {
+            TermLogger::init(
+                match verbosity {
+                    0 => LevelFilter::Warn,
+                    1 => LevelFilter::Info,
+                    2 => LevelFilter::Debug,
+                    _ => LevelFilter::Trace,
+                },
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Always,
+            );
+            debug!(
+                "Verbosity set to {}",
+                match verbosity {
+                    2 => "Debug",
+                    _ => "Trace",
+                }
+            );
+            Ok(())
+        }
+    }
+
     /// Deserializes ./box.json and assigns the MusicBox with the name given via arguments to the self.music_box.
     fn choose_music_box(&mut self) -> Result<()> {
-        let file = match File::open(self.args.get_one::<String>("io_box").unwrap()) {
+        let file = match File::open("boxes.json") {
             Ok(t) => t,
             Err(e) => return Err(Error::IOError(Box::new(e))),
         };
@@ -58,15 +102,17 @@ impl MusicBoxConverter {
             if m.name != *chosen_box {
                 continue;
             }
-            if self.verbose {
-                println!("Selected music box: {}", m.name)
-            }
+            info!("Selected music box: {}", m.name);
             self.music_box = Some(m);
             return Ok(());
         }
 
         Err(Error::Generic(
-            format!("Music box '{0}' not found!", *chosen_box).to_string(),
+            format!(
+                "Music box '{0}' not found. Check spelling and boxes.json file.",
+                *chosen_box
+            )
+            .to_string(),
         ))
     }
 
@@ -88,12 +134,13 @@ impl MusicBoxConverter {
 
     /// Stores an absolute representation of the midi data in self.absolute_track
     fn get_abs(&mut self) -> Result<()> {
-        let mut arg = self.args.get_one::<String>("io_in").unwrap().to_owned();
-        if arg.chars().collect::<Vec<char>>()[0] == ' ' {
-            arg.remove(0);
+        let mut input = self.args.get_one::<String>("io_in").unwrap().to_owned();
+        let track_number = self.args.get_one::<usize>("track").unwrap().to_owned();
+        if input.chars().collect::<Vec<char>>()[0] == ' ' {
+            input.remove(0);
         }
 
-        let mut file: Vec<u8> = match std::fs::read(arg) {
+        let mut file: Vec<u8> = match std::fs::read(input) {
             Ok(t) => t,
             Err(e) => return Err(Error::IOError(Box::new(e))),
         };
@@ -103,8 +150,10 @@ impl MusicBoxConverter {
             Err(e) => return Err(Error::MidiError(Box::new(e))),
         };
 
-        // Just taking the first track for now
-        self.abs_track = Option::Some(Track::from_midi_track(smf.tracks[0].clone()));
+        self.abs_track = Option::Some(Track::from_midi_track(smf.tracks[track_number].clone()));
+        if self.abs_track.as_ref().unwrap().is_empty() {
+            return Err(Error::Generic(format!("Track {} is empty", track_number)));
+        }
 
         Ok(())
     }
@@ -145,7 +194,7 @@ impl MusicBoxConverter {
         for event in &**abs.clone() {
             if (event.abs - first_note_pos) as f64 * scale_factor.x > PAPER_SIZE.x {
                 self.draw_page(
-                    &pages.last().unwrap(),
+                    pages.last().unwrap(),
                     (event.abs - first_note_pos) as f64 * scale_factor.x,
                 );
                 pages.push(Vec::<Event>::new());
@@ -156,7 +205,7 @@ impl MusicBoxConverter {
             last_note_pos = event.abs;
         }
         self.draw_page(
-            &pages.last().unwrap(),
+            pages.last().unwrap(),
             (last_note_pos - first_note_pos) as f64 * scale_factor.x,
         );
 
@@ -191,9 +240,8 @@ impl MusicBoxConverter {
         let first_note_pos = notes.first().unwrap().abs;
 
         for event in notes {
-            if self.verbose {
-                println!("Playing {:?}", event.note);
-            }
+            info!("Drawing {}", event.note);
+
             let note_index = match music_box.get_index(&event.note) {
                 Some(t) => t,
                 None => continue,

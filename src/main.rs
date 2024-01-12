@@ -17,7 +17,10 @@ use crate::prelude::*;
 fn main() -> Result<()> {
     let args = get_args();
     let mut converter = MusicBoxConverter::new(args);
-    converter.run()?;
+    match converter.run() {
+        Ok(t) => (),
+        Err(e) => error!("{}", e),
+    }
 
     Ok(())
 }

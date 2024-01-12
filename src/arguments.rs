@@ -1,5 +1,5 @@
 // clap
-use clap::{Arg, ArgMatches, Command};
+use clap::{value_parser, Arg, ArgAction, ArgMatches, Command};
 
 pub fn get_args() -> ArgMatches {
     Command::new("Music box converter")
@@ -11,7 +11,7 @@ pub fn get_args() -> ArgMatches {
             Arg::new("io_in")
                 .short('i')
                 .long("input")
-                .help("Specifies the input file")
+                .help("Specifies the input file.")
                 .num_args(1)
                 .value_name("FILE")
                 .required(true),
@@ -20,26 +20,16 @@ pub fn get_args() -> ArgMatches {
             Arg::new("io_out")
                 .short('o')
                 .long("output")
-                .help("Specifies which folder to output to")
+                .help("Specifies which folder to output to.")
                 .num_args(1)
                 .value_name("FILE")
                 .required(true),
         )
         .arg(
-            Arg::new("io_box")
-                .short('f')
-                .long("boxes")
-                .help("Specifies which music box file to use")
-                .default_value("./box.json")
-                .num_args(1)
-                .value_name("FILE")
-                .required(false),
-        )
-        .arg(
             Arg::new("io_settings")
                 .short('S')
                 .long("settings")
-                .help("Specifies which settings file to use")
+                .help("Specifies which settings file to use.")
                 .default_value("./settings.json")
                 .num_args(1)
                 .value_name("FILE")
@@ -49,29 +39,49 @@ pub fn get_args() -> ArgMatches {
             Arg::new("box")
                 .short('b')
                 .long("box")
-                .help("Specifies which music box from the box.json file to use")
+                .help("Specifies which music box from the boxes.json file to use.")
                 .default_value("30_note")
                 .num_args(1)
                 .value_name("FILE")
                 .required(false),
         )
         .arg(
+            Arg::new("track")
+                .short('t')
+                .long("track")
+                .help("Which track of the input midi file to use. Zero-based.")
+                .default_value("0")
+                .value_parser(value_parser!(usize))
+                .num_args(1)
+                .value_name("TRACK_NUMBER")
+                .required(false),
+        )
+        .arg(
             Arg::new("verbosity")
                 .short('v')
                 .long("verbose")
-                .help("Increases verbosity. Helpful for debugging")
+                .help("Increases verbosity. Can be used multiple times to raise log level.")
                 .default_value("false")
                 .num_args(0)
-                .value_name("verbose")
-                .required(false),
+                .action(ArgAction::Count)
+                .required(false)
+                .conflicts_with("quiet"),
+        )
+        .arg(
+            Arg::new("quiet")
+                .short('q')
+                .long("quiet")
+                .help("No Output. Exclusive to verbosity")
+                .default_value("false")
+                .num_args(0)
+                .conflicts_with("verbosity"),
         )
         .arg(
             Arg::new("force")
                 .long("force")
-                .help("Forces output in cwd. Not recommended due to amount of possible files")
+                .help("Forces output in cwd. Not recommended due to amount of possible files.")
                 .default_value("false")
                 .num_args(0)
-                .value_name("force")
                 .required(false),
         )
         .help_template(HELP_TEMPLATE)

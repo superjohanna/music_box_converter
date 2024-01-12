@@ -6,16 +6,16 @@ use serde_derive::Deserialize;
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub enum Note {
-    C(u8),
-    CS(u8),
-    D(u8),
-    DS(u8),
-    E(u8),
-    F(u8),
-    FS(u8),
-    G(u8),
-    GS(u8),
-    A(u8),
-    AS(u8),
-    B(u8),
+    C(i8),
+    CS(i8),
+    D(i8),
+    DS(i8),
+    E(i8),
+    F(i8),
+    FS(i8),
+    G(i8),
+    GS(i8),
+    A(i8),
+    AS(i8),
+    B(i8),
 }
