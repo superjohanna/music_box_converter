@@ -21,7 +21,7 @@ pub struct MusicBoxConverter {
     music_box: Option<MusicBox>,
     svg_settings: Option<Settings>,
     svg: Vec<Document>,
-    abs_track: Option<Track>,
+    track: Option<Track>,
     scale: Option<Vec2<f64>>,
 }
 
@@ -32,7 +32,7 @@ impl MusicBoxConverter {
             music_box: Option::None,
             svg_settings: Option::None,
             svg: Vec::<Document>::new(),
-            abs_track: Option::None,
+            track: Option::None,
             scale: Option::Some(Vec2::<f64>::default()),
         }
     }

@@ -1,12 +1,13 @@
 // Internal
 use super::Track;
-use crate::music::{event::Event, note::Note};
+use crate::music::{event::Event, music_box::MusicBox, note::Note};
+use crate::prelude::*;
 
 // midly
 use midly::{MetaMessage, MidiMessage, Track as MidiTrack};
 
 impl Track {
-    pub fn from_midi_track(track: MidiTrack) -> Self {
+    pub fn from_midi_track(track: MidiTrack, music_box: &MusicBox) -> Self {
         let mut output = Self {
             inner: Vec::<Event>::new(),
             tick_length: u64::MIN,
@@ -29,10 +30,23 @@ impl Track {
                 _ => continue,
             };
 
+            if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
+                info!(
+                    "Note {0} not playable with music box {1}. Skipping ",
+                    Note::from_midi_pitch(pitch),
+                    music_box.name
+                );
+                continue;
+            }
+
+            info!("Found note {}", Note::from_midi_pitch(pitch));
+
             if last_seen[pitch.as_int() as usize].is_some() {
                 let distance = current_time - last_seen[pitch.as_int() as usize].unwrap();
-                output.min_distance = std::cmp::min(distance, output.min_distance);
-                output.max_distance = std::cmp::max(distance, output.max_distance);
+                if distance != 0 {
+                    output.min_distance = std::cmp::min(distance, output.min_distance);
+                    output.max_distance = std::cmp::max(distance, output.max_distance);
+                }
             }
 
             last_seen[u8::from(pitch) as usize] = Some(current_time);
@@ -64,5 +78,11 @@ impl std::ops::Deref for Track {
 
     fn deref(&self) -> &Self::Target {
         &self.inner
+    }
+}
+
+impl std::ops::DerefMut for Track {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }

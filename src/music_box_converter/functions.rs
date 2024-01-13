@@ -150,9 +150,24 @@ impl MusicBoxConverter {
             Err(e) => return Err(Error::MidiError(Box::new(e))),
         };
 
-        self.abs_track = Option::Some(Track::from_midi_track(smf.tracks[track_number].clone()));
-        if self.abs_track.as_ref().unwrap().is_empty() {
-            return Err(Error::Generic(format!("Track {} is empty", track_number)));
+        if track_number > smf.tracks.len() - 1 {
+            return Err(Error::Generic(format!(
+                "File only contains {0} track(s). Track number {1} is out of bounds. Remember that the track number is zero-based: 0 => track number 1, 3 => track number 4",
+                smf.tracks.len(),
+                track_number
+            )));
+        }
+
+        self.track = Some(Track::from_midi_track(
+            smf.tracks[track_number].clone(),
+            self.music_box.res()?,
+        ));
+
+        if self.track.res()?.len() < 2 {
+            return Err(Error::Generic(format!(
+                "Track {} contains fewer than two playable notes",
+                track_number
+            )));
         }
 
         Ok(())
@@ -160,12 +175,12 @@ impl MusicBoxConverter {
 
     /// Sets the scale_factor and meta in the self.
     fn set_scale_factor(&mut self) -> Result<()> {
-        let music_box = self.music_box.as_ref().unwrap();
+        let music_box = self.music_box.res()?;
 
         // X (Horizontal): How much do we have to scale the notes for it to be compatible with the music box
         // Y (Vertical): How much space there is between two lines
         let mut scale_factor = Vec2::<f64>::new(
-            music_box.min_note_distance_mm / self.abs_track.as_ref().unwrap().min_distance() as f64,
+            music_box.min_note_distance_mm / self.track.res()?.min_distance() as f64,
             music_box.vertical_note_distance(),
         );
 
@@ -176,62 +191,51 @@ impl MusicBoxConverter {
 
     /// Generates the svgs and saves them in self.svg.
     fn generate_svgs(&mut self) -> Result<()> {
-        // References
-        let abs = self.abs_track.as_ref().unwrap();
-        let scale_factor = self.scale.clone().unwrap();
-        let settings = self.svg_settings.as_ref().unwrap();
-
         // Pages
         let mut pages = Vec::<Vec<Event>>::new();
         pages.push(Vec::<Event>::new());
 
         // Loop variables
-        // let mut length = 0f64; // Length of the current notes on page
-        let mut first_note_pos = u64::MIN; // Absolute position of the first note on the page
-        let mut last_note_pos = u64::MIN;
+        let mut first_note_pos = u64::MIN;
+        let mut overflow = u64::MIN;
 
-        // Loop over every note and try to fit it onto a page. If the page is full add a new one
-        for event in &**abs.clone() {
-            if (event.abs - first_note_pos) as f64 * scale_factor.x > PAPER_SIZE.x {
-                self.draw_page(
-                    pages.last().unwrap(),
-                    (event.abs - first_note_pos) as f64 * scale_factor.x,
-                );
+        for event in self.track.clone().unwrap().iter() {
+            if (event.abs - first_note_pos + overflow) as f64 * self.scale.res()?.x > PAPER_SIZE.x {
+                self.draw_page(pages.last().unwrap(), overflow);
+                overflow = event.abs - pages.last().unwrap().last().unwrap().abs;
                 pages.push(Vec::<Event>::new());
                 first_note_pos = event.abs;
             }
 
             pages.last_mut().unwrap().push(event.clone());
-            last_note_pos = event.abs;
         }
-        self.draw_page(
-            pages.last().unwrap(),
-            (last_note_pos - first_note_pos) as f64 * scale_factor.x,
-        );
+
+        self.draw_page(pages.last().unwrap(), overflow);
 
         Ok(())
     }
 
     /// Don't call manually.
     /// It's called by <code>self.generate_svgs</code>.
-    fn draw_page(&mut self, notes: &Vec<Event>, length: f64) -> Result<()> {
-        // References
-        let settings = self.svg_settings.as_ref().unwrap();
-        let scale_factor = self.scale.as_ref().unwrap();
-        let music_box = self.music_box.as_ref().unwrap();
-
+    fn draw_page(&mut self, notes: &Vec<Event>, overflow: u64) -> Result<()> {
         // Output
         let mut document = Document::default();
 
         // Draw note lines
-        for i in 0..self.music_box.as_ref().unwrap().note_count() {
-            let current_pos = settings.staff_offset_mm + (i as f64 * scale_factor.y);
+        for i in 0..self.music_box.res()?.note_count() {
+            let current_pos =
+                self.svg_settings.res()?.staff_offset_mm + (i as f64 * self.scale.res()?.y);
             document.append(
                 Line::new_builder()
-                    .set_start(settings.staff_offset_mm, current_pos)
-                    .set_end(length, current_pos)
-                    .set_stroke(settings.staff_line_colour.clone())
-                    .set_stroke_width(settings.staff_line_thickness_mm)
+                    .set_start(self.svg_settings.res()?.staff_offset_mm, current_pos)
+                    .set_end(
+                        (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                            * self.scale.res()?.x
+                            + self.svg_settings.res()?.staff_offset_mm,
+                        current_pos,
+                    )
+                    .set_stroke(self.svg_settings.res()?.staff_line_colour.clone())
+                    .set_stroke_width(self.svg_settings.res()?.staff_line_thickness_mm)
                     .finish(),
             );
         }
@@ -242,22 +246,23 @@ impl MusicBoxConverter {
         for event in notes {
             info!("Drawing {}", event.note);
 
-            let note_index = match music_box.get_index(&event.note) {
-                Some(t) => t,
+            let note_index = match self.music_box.res()?.get_index(&event.note) {
+                Some(t) => t + 1, // Zero based index
                 None => continue,
             };
 
             document.append(
                 Circle::new_builder()
                     .set_centre(
-                        (event.abs - first_note_pos) as f64 * scale_factor.x
-                            + settings.staff_offset_mm,
-                        (music_box.note_count() - note_index) as f64 * scale_factor.y
-                            + settings.staff_offset_mm,
+                        (event.abs + overflow - first_note_pos) as f64 * self.scale.res()?.x
+                            + self.svg_settings.res()?.staff_offset_mm,
+                        (self.music_box.res()?.note_count() - note_index) as f64
+                            * self.scale.res()?.y
+                            + self.svg_settings.res()?.staff_offset_mm,
                     )
-                    .set_radius(settings.hole_radius_mm)
-                    .set_stroke(settings.hole_colour.clone())
-                    .set_stroke_width(settings.hole_radius_mm)
+                    .set_radius(self.svg_settings.res()?.hole_radius_mm)
+                    .set_stroke(self.svg_settings.res()?.hole_colour.clone())
+                    .set_stroke_width(self.svg_settings.res()?.hole_radius_mm)
                     .finish(),
             );
         }

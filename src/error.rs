@@ -7,6 +7,9 @@ use std::io;
 pub enum Error {
     #[error("Generic Error: {0}")]
     Generic(String),
+    #[error("Internal Error: {0}")]
+    Internal(String),
+
     #[error("IO Error: {0}")]
     IOError(Box<io::Error>),
     #[error("Serialization Error: {0}")]

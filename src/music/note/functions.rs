@@ -7,7 +7,7 @@ use super::Note;
 impl Note {
     pub fn from_midi_pitch(p: midly::num::u7) -> Self {
         let pitch = p.as_int();
-        let octave = ((pitch - 21) / 12) as i8;
+        let octave = ((pitch - 12) / 12) as i8;
         match pitch % 12 {
             0 => Note::C(octave),
             1 => Note::CS(octave),

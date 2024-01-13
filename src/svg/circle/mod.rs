@@ -30,7 +30,7 @@ impl<T: Clone + std::fmt::Display + 'static> Child for Circle<T> {
         let stroke = &self.stroke;
         let stroke_width = &self.stroke_width;
         format!(
-            r#"<circle cx="{centre_x}{unit_suffix}" cy="{centre_y}{unit_suffix}" r="{radius}{unit_suffix}" stroke="{stroke}" stroke-width="{stroke_width}{unit_suffix}" />"#
+            r#"<circle cx="{centre_x}{unit_suffix}" cy="{centre_y}{unit_suffix}" r="{radius}{unit_suffix}" stroke="{stroke}" stroke-width="{stroke_width}{unit_suffix}" fill="{stroke}" />"#
         )
     }
 }
