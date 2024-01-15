@@ -27,7 +27,7 @@ impl Note {
 
     pub fn to_midi_pitch(&self) -> midly::num::u7 {
         match self {
-            Note::C(octave) => u7::from_int_lossy((0 + (octave * 12) + 12) as u8),
+            Note::C(octave) => u7::from_int_lossy(((octave * 12) + 12) as u8),
             Note::CS(octave) => u7::from_int_lossy((1 + (octave * 12) + 12) as u8),
             Note::D(octave) => u7::from_int_lossy((2 + (octave * 12) + 12) as u8),
             Note::DS(octave) => u7::from_int_lossy((3 + (octave * 12) + 12) as u8),

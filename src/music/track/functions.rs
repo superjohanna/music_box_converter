@@ -37,31 +37,39 @@ impl Track {
             }
 
             if !transpose {
+                // Not transpose. Just check if it's playable
                 if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
+                    // Not playable
                     info!(
-                        "Note {0} at {current_time} not playable with music box {1}. Skipping.",
+                        "Note '{0}' at '{current_time}' not playable with music box '{1}'. Skipping.",
                         Note::from_midi_pitch(pitch),
                         music_box.name
                     );
                     continue;
                 }
-            } else {
-                if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
-                    let note = Note::from_midi_pitch(pitch);
-                    let note_octave = note.get_octave();
-                    for i in -1..=9 {
-                        if !music_box.is_valid_note(&note.transpose(i)) {
-                            continue;
-                        }
-                        info!("Transposing note from octave {note_octave} to {i}");
-                        pitch = note.transpose(i).to_midi_pitch();
-                        break;
+            } else if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
+                // Transpose and unplayable note
+                let note = Note::from_midi_pitch(pitch);
+                let note_octave = note.get_octave();
+                for i in -1..=9 {
+                    if !music_box.is_valid_note(&note.transpose(i)) {
+                        continue;
                     }
+                    info!("Transposing note from octave {note_octave} to {i}");
+                    pitch = note.transpose(i).to_midi_pitch();
+                    break;
                 }
+                // Couldn't transpose
+                info!(
+                    "Note '{0}' at '{current_time}' not playable with music box '{1}'. Skipping.",
+                    Note::from_midi_pitch(pitch),
+                    music_box.name
+                );
+                continue;
             }
 
             info!(
-                "Found note {} at {current_time}.",
+                "Found note '{}' at '{current_time}'.",
                 Note::from_midi_pitch(pitch)
             );
 
