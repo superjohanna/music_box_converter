@@ -47,13 +47,22 @@ pub fn get_args() -> ArgMatches {
         )
         .arg(
             Arg::new("track")
-                .short('t')
+                .short('T')
                 .long("track")
                 .help("Which track of the input midi file to use. Zero-based.")
                 .default_value("0")
                 .value_parser(value_parser!(usize))
                 .num_args(1)
                 .value_name("TRACK_NUMBER")
+                .required(false),
+        )
+        .arg(
+            Arg::new("transpose")
+                .short('t')
+                .long("transpose")
+                .help("Transposes notes which can't be played in their octave to the nearest one which can be played.")
+                .default_value("false")
+                .num_args(0)
                 .required(false),
         )
         .arg(

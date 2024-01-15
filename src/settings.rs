@@ -14,7 +14,4 @@ pub struct Settings {
     pub staff_bounding_box_colour: String,
     pub staff_line_colour: String,
     pub hole_colour: String,
-
-    // Midi
-    pub note_min_delay_ticks: u64,
 }
