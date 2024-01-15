@@ -19,7 +19,7 @@ use crate::{
 pub struct MusicBoxConverter {
     args: ArgMatches,
     music_box: Option<MusicBox>,
-    svg_settings: Option<Settings>,
+    settings: Option<Settings>,
     svg: Vec<Document>,
     track: Option<Track>,
     scale: Option<Vec2<f64>>,
@@ -30,7 +30,7 @@ impl MusicBoxConverter {
         Self {
             args,
             music_box: Option::None,
-            svg_settings: Option::None,
+            settings: Option::None,
             svg: Vec::<Document>::new(),
             track: Option::None,
             scale: Option::Some(Vec2::<f64>::default()),

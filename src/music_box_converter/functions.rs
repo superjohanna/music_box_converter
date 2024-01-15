@@ -138,7 +138,7 @@ impl MusicBoxConverter {
             Err(e) => return Err(Error::SerdeJsonError(Box::new(e))),
         };
 
-        self.svg_settings = Some(deserialized);
+        self.settings = Some(deserialized);
         Ok(())
     }
 
@@ -237,21 +237,61 @@ impl MusicBoxConverter {
         // Draw note lines
         for i in 0..self.music_box.res()?.note_count() {
             let current_pos =
-                self.svg_settings.res()?.staff_offset_mm + (i as f64 * self.scale.res()?.y);
+                self.settings.res()?.staff_offset_mm + (i as f64 * self.scale.res()?.y);
             document.append(
                 Line::new_builder()
-                    .set_start(self.svg_settings.res()?.staff_offset_mm, current_pos)
+                    .set_start(self.settings.res()?.staff_offset_mm, current_pos)
                     .set_end(
                         (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
                             * self.scale.res()?.x
-                            + self.svg_settings.res()?.staff_offset_mm,
+                            + self.settings.res()?.staff_offset_mm,
                         current_pos,
                     )
-                    .set_stroke(self.svg_settings.res()?.staff_line_colour.clone())
-                    .set_stroke_width(self.svg_settings.res()?.staff_line_thickness_mm)
+                    .set_stroke(self.settings.res()?.staff_line_colour.clone())
+                    .set_stroke_width(self.settings.res()?.staff_line_thickness_mm)
                     .finish(),
             );
         }
+
+        // Draw staff bounding box
+        // Left
+        document.append(
+            Line::new_builder()
+                .set_start(
+                    self.settings.res()?.staff_offset_mm,
+                    self.settings.res()?.staff_offset_mm,
+                )
+                .set_end(
+                    self.settings.res()?.staff_offset_mm,
+                    self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
+                        + self.settings.res()?.staff_offset_mm,
+                )
+                .set_stroke(self.settings.res()?.staff_bounding_box_colour.clone())
+                .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
+                .finish(),
+        );
+
+        // Right
+        document.append(
+            Line::new_builder()
+                .set_start(
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                        * self.scale.res()?.x
+                        + self.settings.res()?.staff_offset_mm,
+                    self.settings.res()?.staff_offset_mm,
+                )
+                .set_end(
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                        * self.scale.res()?.x
+                        + self.settings.res()?.staff_offset_mm,
+                    self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
+                        + self.settings.res()?.staff_offset_mm
+                        - 1f64,
+                )
+                .set_stroke(self.settings.res()?.staff_bounding_box_colour.clone())
+                .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
+                .finish(),
+        );
 
         // Draw notes
         let first_note_pos = notes.first().unwrap().abs;
@@ -268,14 +308,14 @@ impl MusicBoxConverter {
                 Circle::new_builder()
                     .set_centre(
                         (event.abs + overflow - first_note_pos) as f64 * self.scale.res()?.x
-                            + self.svg_settings.res()?.staff_offset_mm,
+                            + self.settings.res()?.staff_offset_mm,
                         (self.music_box.res()?.note_count() - note_index) as f64
                             * self.scale.res()?.y
-                            + self.svg_settings.res()?.staff_offset_mm,
+                            + self.settings.res()?.staff_offset_mm,
                     )
-                    .set_radius(self.svg_settings.res()?.hole_radius_mm)
-                    .set_stroke(self.svg_settings.res()?.hole_colour.clone())
-                    .set_stroke_width(self.svg_settings.res()?.hole_radius_mm)
+                    .set_radius(self.settings.res()?.hole_radius_mm)
+                    .set_stroke(self.settings.res()?.hole_colour.clone())
+                    .set_stroke_width(self.settings.res()?.hole_radius_mm)
                     .finish(),
             );
         }
