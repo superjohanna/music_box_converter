@@ -32,14 +32,14 @@ impl Track {
 
             if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
                 info!(
-                    "Note {0} not playable with music box {1}. Skipping ",
+                    "Found note '{0}'. Note not playable with music box '{1}'. Skipping ",
                     Note::from_midi_pitch(pitch),
                     music_box.name
                 );
                 continue;
             }
 
-            info!("Found note {}", Note::from_midi_pitch(pitch));
+            info!("Found note '{}'", Note::from_midi_pitch(pitch));
 
             if last_seen[pitch.as_int() as usize].is_some() {
                 let distance = current_time - last_seen[pitch.as_int() as usize].unwrap();

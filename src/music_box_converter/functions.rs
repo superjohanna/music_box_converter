@@ -30,16 +30,26 @@ use crate::{
 };
 
 impl MusicBoxConverter {
-    pub fn run(mut self) -> Result<()> {
+    pub fn run_output_file(mut self) -> Result<()> {
         self.choose_log_level()?;
         self.choose_music_box()?;
         self.load_settings()?;
         self.get_abs()?;
         self.set_scale_factor()?;
         self.generate_svgs()?;
-        self.output_document()?;
+        self.write_documents()?;
 
         Ok(())
+    }
+
+    pub fn run_output_string(mut self) -> Result<Vec<String>> {
+        self.choose_log_level()?;
+        self.choose_music_box()?;
+        self.load_settings()?;
+        self.get_abs()?;
+        self.set_scale_factor()?;
+        self.generate_svgs()?;
+        self.output_documents()
     }
 
     fn choose_log_level(&mut self) -> Result<()> {
@@ -272,8 +282,8 @@ impl MusicBoxConverter {
         Ok(())
     }
 
-    /// Outputs the current document to the specified output file
-    fn output_document(&self) -> Result<()> {
+    /// Writes the documents to a file
+    fn write_documents(&self) -> Result<()> {
         let mut path_string = self.args.get_one::<String>("io_out").unwrap().to_owned();
         path_string = path_string.replace(' ', "");
         let path_buf = std::path::PathBuf::from(path_string);
@@ -288,6 +298,17 @@ impl MusicBoxConverter {
             svg.save(std::path::Path::new(&path_i))?
         }
         Ok(())
+    }
+
+    /// Returns a Vec of strings containing the documents
+    fn output_documents(&self) -> Result<Vec<String>> {
+        let mut docs = Vec::<String>::new();
+
+        for svg in self.svg.iter() {
+            docs.push(svg.print());
+        }
+
+        Ok(docs)
     }
 }
 

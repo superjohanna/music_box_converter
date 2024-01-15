@@ -17,10 +17,18 @@ use crate::prelude::*;
 fn main() -> Result<()> {
     let args = get_args();
     let mut converter = MusicBoxConverter::new(args);
-    match converter.run() {
+    match converter.run_output_file() {
         Ok(t) => (),
         Err(e) => error!("{}", e),
     }
 
     Ok(())
+}
+
+mod tests {
+
+    #[cfg(test)]
+    fn test_1() {
+        
+    }
 }
