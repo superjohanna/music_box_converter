@@ -146,6 +146,8 @@ impl MusicBoxConverter {
     fn get_abs(&mut self) -> Result<()> {
         let mut input = self.args.get_one::<String>("io_in").unwrap().to_owned();
         let track_number = self.args.get_one::<usize>("track").unwrap().to_owned();
+        let transpose = self.args.get_flag("transpose");
+
         if input.chars().collect::<Vec<char>>()[0] == ' ' {
             input.remove(0);
         }
@@ -171,6 +173,7 @@ impl MusicBoxConverter {
         self.track = Some(Track::from_midi_track(
             smf.tracks[track_number].clone(),
             self.music_box.res()?,
+            &transpose,
         ));
 
         if self.track.res()?.len() < 2 {
@@ -285,18 +288,22 @@ impl MusicBoxConverter {
     /// Writes the documents to a file
     fn write_documents(&self) -> Result<()> {
         let mut path_string = self.args.get_one::<String>("io_out").unwrap().to_owned();
-        path_string = path_string.replace(' ', "");
-        let path_buf = std::path::PathBuf::from(path_string);
-        let path_canonical = match std::fs::canonicalize(path_buf) {
+        let mut abs_path = match crate::path::absolute_path(path_string) {
             Ok(t) => t,
             Err(e) => return Err(Error::IOError(Box::new(e))),
         };
 
+        match std::fs::create_dir_all(abs_path.clone()) {
+            Ok(t) => t,
+            Err(e) => return Err(Error::IOError(Box::new(e))),
+        }
+
         for (i, svg) in self.svg.iter().enumerate() {
-            let mut path_i = path_canonical.clone();
+            let mut path_i = abs_path.clone();
             path_i.push(i.to_string() + ".svg");
             svg.save(std::path::Path::new(&path_i))?
         }
+
         Ok(())
     }
 

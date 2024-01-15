@@ -1,5 +1,5 @@
 // midly
-use midly::MidiMessage;
+use midly::{num::u7, MidiMessage};
 
 // Internal
 use super::Note;
@@ -22,6 +22,58 @@ impl Note {
             10 => Note::AS(octave),
             11 => Note::B(octave),
             _ => panic!("/music/note/function.rs/from_midi_pitch(). Impossible value!"),
+        }
+    }
+
+    pub fn to_midi_pitch(&self) -> midly::num::u7 {
+        match self {
+            Note::C(octave) => u7::from_int_lossy((0 + (octave * 12) + 12) as u8),
+            Note::CS(octave) => u7::from_int_lossy((1 + (octave * 12) + 12) as u8),
+            Note::D(octave) => u7::from_int_lossy((2 + (octave * 12) + 12) as u8),
+            Note::DS(octave) => u7::from_int_lossy((3 + (octave * 12) + 12) as u8),
+            Note::E(octave) => u7::from_int_lossy((4 + (octave * 12) + 12) as u8),
+            Note::F(octave) => u7::from_int_lossy((5 + (octave * 12) + 12) as u8),
+            Note::FS(octave) => u7::from_int_lossy((6 + (octave * 12) + 12) as u8),
+            Note::G(octave) => u7::from_int_lossy((7 + (octave * 12) + 12) as u8),
+            Note::GS(octave) => u7::from_int_lossy((8 + (octave * 12) + 12) as u8),
+            Note::A(octave) => u7::from_int_lossy((9 + (octave * 12) + 12) as u8),
+            Note::AS(octave) => u7::from_int_lossy((10 + (octave * 12) + 12) as u8),
+            Note::B(octave) => u7::from_int_lossy((11 + (octave * 12) + 12) as u8),
+        }
+    }
+
+    pub fn transpose(&self, octave: i8) -> Self {
+        let current_octave = self.get_octave().to_owned();
+        match self {
+            Note::C(_) => Note::C(octave),
+            Note::CS(_) => Note::CS(octave),
+            Note::D(_) => Note::D(octave),
+            Note::DS(_) => Note::DS(octave),
+            Note::E(_) => Note::E(octave),
+            Note::F(_) => Note::F(octave),
+            Note::FS(_) => Note::FS(octave),
+            Note::G(_) => Note::G(octave),
+            Note::GS(_) => Note::GS(octave),
+            Note::A(_) => Note::A(octave),
+            Note::AS(_) => Note::AS(octave),
+            Note::B(_) => Note::B(octave),
+        }
+    }
+
+    pub fn get_octave(&self) -> &i8 {
+        match self {
+            Note::C(octave) => octave,
+            Note::CS(octave) => octave,
+            Note::D(octave) => octave,
+            Note::DS(octave) => octave,
+            Note::E(octave) => octave,
+            Note::F(octave) => octave,
+            Note::FS(octave) => octave,
+            Note::G(octave) => octave,
+            Note::GS(octave) => octave,
+            Note::A(octave) => octave,
+            Note::AS(octave) => octave,
+            Note::B(octave) => octave,
         }
     }
 }

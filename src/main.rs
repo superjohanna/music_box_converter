@@ -4,6 +4,7 @@ pub mod arguments;
 pub mod error;
 pub mod music;
 pub mod music_box_converter;
+pub mod path;
 pub mod prelude;
 pub mod settings;
 pub mod svg;

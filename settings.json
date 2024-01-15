@@ -4,6 +4,5 @@
     "staff_line_thickness_mm": 1,
     "staff_bounding_box_colour": "#abcdef",
     "staff_line_colour": "#000000",
-    "hole_colour": "#FF0000",
-    "note_min_delay_ticks": 50
+    "hole_colour": "#FF0000"
 }
