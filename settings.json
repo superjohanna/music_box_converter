@@ -2,8 +2,10 @@
     "staff_offset_mm": 10,
     "hole_radius_mm": 1,
     "staff_line_thickness_mm": 1,
-    "staff_bounding_box_colour": "#ff00ff",
     "staff_line_colour": "#000000",
     "hole_colour": "#FF0000",
-    "staff_bounding_box_thickness_mm": 2
+    "staff_bounding_box_top_bottom_colour": "#ff00ff",
+    "staff_bounding_box_top_bottom_distance_mm": 5,
+    "staff_bounding_box_thickness_mm": 2,
+    "staff_bounding_box_left_right_colour": "#00ff00"
 }

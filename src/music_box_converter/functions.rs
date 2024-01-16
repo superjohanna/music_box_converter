@@ -259,14 +259,27 @@ impl MusicBoxConverter {
             Line::new_builder()
                 .set_start(
                     self.settings.res()?.staff_offset_mm,
-                    self.settings.res()?.staff_offset_mm,
+                    self.settings.res()?.staff_offset_mm
+                        - self
+                            .settings
+                            .res()?
+                            .staff_bounding_box_top_bottom_distance_mm,
                 )
                 .set_end(
                     self.settings.res()?.staff_offset_mm,
                     self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
-                        + self.settings.res()?.staff_offset_mm,
+                        + self.settings.res()?.staff_offset_mm
+                        + self
+                            .settings
+                            .res()?
+                            .staff_bounding_box_top_bottom_distance_mm,
                 )
-                .set_stroke(self.settings.res()?.staff_bounding_box_colour.clone())
+                .set_stroke(
+                    self.settings
+                        .res()?
+                        .staff_bounding_box_left_right_colour
+                        .clone(),
+                )
                 .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
                 .finish(),
         );
@@ -278,7 +291,11 @@ impl MusicBoxConverter {
                     (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
-                    self.settings.res()?.staff_offset_mm,
+                    self.settings.res()?.staff_offset_mm
+                        - self
+                            .settings
+                            .res()?
+                            .staff_bounding_box_top_bottom_distance_mm,
                 )
                 .set_end(
                     (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
@@ -286,9 +303,81 @@ impl MusicBoxConverter {
                         + self.settings.res()?.staff_offset_mm,
                     self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
                         + self.settings.res()?.staff_offset_mm
-                        - 1f64,
+                        + self
+                            .settings
+                            .res()?
+                            .staff_bounding_box_top_bottom_distance_mm,
                 )
-                .set_stroke(self.settings.res()?.staff_bounding_box_colour.clone())
+                .set_stroke(
+                    self.settings
+                        .res()?
+                        .staff_bounding_box_left_right_colour
+                        .clone(),
+                )
+                .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
+                .finish(),
+        );
+
+        // Top
+        document.append(
+            Line::new_builder()
+                .set_start(
+                    self.settings.res()?.staff_offset_mm,
+                    self.settings.res()?.staff_offset_mm
+                        - self
+                            .settings
+                            .res()?
+                            .staff_bounding_box_top_bottom_distance_mm,
+                )
+                .set_end(
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                        * self.scale.res()?.x
+                        + self.settings.res()?.staff_offset_mm,
+                    self.settings.res()?.staff_offset_mm
+                        - self
+                            .settings
+                            .res()?
+                            .staff_bounding_box_top_bottom_distance_mm,
+                )
+                .set_stroke(
+                    self.settings
+                        .res()?
+                        .staff_bounding_box_top_bottom_colour
+                        .clone(),
+                )
+                .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
+                .finish(),
+        );
+
+        // Bottom
+        document.append(
+            Line::new_builder()
+                .set_start(
+                    self.settings.res()?.staff_offset_mm,
+                    self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
+                        + self.settings.res()?.staff_offset_mm
+                        + self
+                            .settings
+                            .res()?
+                            .staff_bounding_box_top_bottom_distance_mm,
+                )
+                .set_end(
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                        * self.scale.res()?.x
+                        + self.settings.res()?.staff_offset_mm,
+                    self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
+                        + self.settings.res()?.staff_offset_mm
+                        + self
+                            .settings
+                            .res()?
+                            .staff_bounding_box_top_bottom_distance_mm,
+                )
+                .set_stroke(
+                    self.settings
+                        .res()?
+                        .staff_bounding_box_top_bottom_colour
+                        .clone(),
+                )
                 .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
                 .finish(),
         );

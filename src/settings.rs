@@ -16,5 +16,7 @@ pub struct Settings {
 
     // Bounding Box
     pub staff_bounding_box_thickness_mm: f64,
-    pub staff_bounding_box_colour: String,
+    pub staff_bounding_box_top_bottom_distance_mm: f64,
+    pub staff_bounding_box_top_bottom_colour: String,
+    pub staff_bounding_box_left_right_colour: String,
 }
