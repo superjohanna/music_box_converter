@@ -17,3 +17,5 @@ pub enum Error {
     #[error("Midi Error: {0}")]
     MidiError(Box<midly::Error>),
 }
+
+

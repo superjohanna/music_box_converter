@@ -8,7 +8,7 @@ impl MusicBox {
         self.notes.contains(note)
     }
     pub fn vertical_note_distance(&self) -> f64 {
-        self.strip_height_mm / self.notes.len() as f64
+        self.strip_height_mm / (self.notes.len() as f64 - 1f64)
     }
 
     pub fn note_count(&self) -> usize {

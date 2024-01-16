@@ -14,7 +14,7 @@ use midly::{MidiMessage, Smf, Track as MidiTrack, TrackEvent, TrackEventKind};
 use serde::{Serialize, Serializer};
 
 // Internal
-use super::MusicBoxConverter;
+use super::MusicBoxConvert;
 use crate::{
     music::{
         self,
@@ -29,7 +29,7 @@ use crate::{
     vec2::Vec2,
 };
 
-impl MusicBoxConverter {
+impl MusicBoxConvert {
     pub fn run_output_file(mut self) -> Result<()> {
         self.choose_log_level()?;
         self.choose_music_box()?;
@@ -403,8 +403,7 @@ impl MusicBoxConverter {
                             + self.settings.res()?.staff_offset_mm,
                     )
                     .set_radius(self.settings.res()?.hole_radius_mm)
-                    .set_stroke(self.settings.res()?.hole_colour.clone())
-                    .set_stroke_width(self.settings.res()?.hole_radius_mm)
+                    .set_fill(self.settings.res()?.hole_colour.clone())
                     .finish(),
             );
         }

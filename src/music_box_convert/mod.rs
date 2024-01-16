@@ -16,7 +16,7 @@ use crate::{
 };
 
 #[derive(Debug, Default)]
-pub struct MusicBoxConverter {
+pub struct MusicBoxConvert {
     args: ArgMatches,
     music_box: Option<MusicBox>,
     settings: Option<Settings>,
@@ -25,15 +25,11 @@ pub struct MusicBoxConverter {
     scale: Option<Vec2<f64>>,
 }
 
-impl MusicBoxConverter {
-    pub fn new(args: ArgMatches) -> Self {
+impl MusicBoxConvert {
+    pub fn new(args: &ArgMatches) -> Self {
         Self {
-            args,
-            music_box: Option::None,
-            settings: Option::None,
-            svg: Vec::<Document>::new(),
-            track: Option::None,
-            scale: Option::Some(Vec2::<f64>::default()),
+            args: args.clone(),
+            ..Default::default()
         }
     }
 }

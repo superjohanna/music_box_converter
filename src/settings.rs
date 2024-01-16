@@ -1,7 +1,7 @@
 // serde_derive
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Default)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Settings {
     // Holes
     pub hole_radius_mm: f64,

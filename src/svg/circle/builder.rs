@@ -5,8 +5,7 @@ use super::Circle;
 pub struct CircleBuilder<T> {
     centre: Option<Vec2<T>>,
     radius: Option<T>,
-    stroke: Option<String>,
-    stroke_width: Option<T>,
+    fill: Option<String>,
 }
 
 impl<T> Circle<T> {
@@ -14,8 +13,7 @@ impl<T> Circle<T> {
         CircleBuilder {
             centre: Option::None,
             radius: Option::None,
-            stroke: Option::None,
-            stroke_width: Option::None,
+            fill: Option::None,
         }
     }
 }
@@ -29,12 +27,8 @@ impl<T> CircleBuilder<T> {
         self.radius = Some(x);
         self
     }
-    pub fn set_stroke(mut self, stroke: String) -> Self {
-        self.stroke = Some(stroke);
-        self
-    }
-    pub fn set_stroke_width(mut self, stroke_width: T) -> Self {
-        self.stroke_width = Some(stroke_width);
+    pub fn set_fill(mut self, fill: String) -> Self {
+        self.fill = Some(fill);
         self
     }
     /// Panics if an option isn't set
@@ -42,8 +36,7 @@ impl<T> CircleBuilder<T> {
         Box::new(Circle {
             centre: self.centre.unwrap(),
             radius: self.radius.unwrap(),
-            stroke: self.stroke.unwrap(),
-            stroke_width: self.stroke_width.unwrap(),
+            fill: self.fill.unwrap(),
         })
     }
 }
