@@ -1,4 +1,5 @@
 pub mod functions;
+pub mod ui;
 
 use std::{default, io::Stdout};
 

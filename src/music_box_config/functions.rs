@@ -13,13 +13,14 @@ use crossterm::{
 
 // ratatui
 use ratatui::{
+    layout::{Constraint, Direction, Layout},
     prelude::{CrosstermBackend, Stylize, Terminal},
     widgets::Paragraph,
 };
 use serde::Serialize;
 
 // Internal
-use super::{CurrentAction, MusicBoxConfig};
+use super::{ui::ui, CurrentAction, MusicBoxConfig};
 use crate::{prelude::*, settings::Settings};
 
 impl MusicBoxConfig {
@@ -42,15 +43,10 @@ impl MusicBoxConfig {
         loop {
             terminal
                 .draw(|frame| {
-                    let area = frame.size();
-                    frame.render_widget(
-                        Paragraph::new("Hello Ratatui! (press 'q' to quit)")
-                            .white()
-                            .on_blue(),
-                        area,
-                    )
+                    ui(frame, self);
                 })
                 .to_res()?;
+
             if event::poll(std::time::Duration::from_millis(100)).to_res()? {
                 if let event::Event::Key(key) = event::read().to_res()? {
                     if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
