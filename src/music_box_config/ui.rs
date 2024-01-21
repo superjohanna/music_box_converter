@@ -11,6 +11,8 @@ use ratatui::{
 use super::MusicBoxConfig;
 
 pub fn ui(f: &mut Frame, app: &MusicBoxConfig) {
+    let settings_max_length = crate::settings::Settings::get_longest_name_len();
+
     let chunks_main = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -22,7 +24,11 @@ pub fn ui(f: &mut Frame, app: &MusicBoxConfig) {
 
     let chunks_sub = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(10), Constraint::Min(1)])
+        .constraints([
+            // length of the largest item plus 2 for the borders
+            Constraint::Length(settings_max_length as u16 + 2u16),
+            Constraint::Min(1),
+        ])
         .split(chunks_main[1]);
 
     let title_block = Block::default()
@@ -36,7 +42,19 @@ pub fn ui(f: &mut Frame, app: &MusicBoxConfig) {
     .block(title_block)
     .alignment(Alignment::Center);
 
-    f.render_widget(title, chunks_main[0])
+    let settings_block = Block::default()
+        .borders(Borders::ALL)
+        .style(Style::default());
+
+    let settings = Paragraph::new(Text::styled(
+        "Here be settings",
+        Style::default().fg(Color::White),
+    ))
+    .block(settings_block)
+    .alignment(Alignment::Left);
+
+    f.render_widget(title, chunks_main[0]);
+    f.render_widget(settings, chunks_sub[0]);
 }
 
 pub enum ValueType {
@@ -52,7 +70,7 @@ pub mod ui_macro {
     /// See settings.rs
     macro_rules! ui_macro_list_items {
         ($enclosing:ty, $($item:ident), +) => {
-            fn get_items() -> Vec<(String, String, ValueType)> {
+            pub fn get_items() -> Vec<(String, String, ValueType)> {
                 paste::paste! {
                     let items = vec![
                         $(
@@ -61,6 +79,25 @@ pub mod ui_macro {
                     ];
                 }
                 return items;
+            }
+
+            pub fn get_longest_name_len() -> usize {
+                paste::paste! {
+                    let item = vec![
+                        $(
+                            $enclosing::[<get_ $item _name>](),
+                        )+
+                    ];
+
+                    let mut len = 0usize;
+                    for i in item.iter() {
+                        let count = i.1.chars().count();
+                        if count > len {
+                            len = count;
+                        }
+                    }
+                    len
+                }
             }
         };
     }
