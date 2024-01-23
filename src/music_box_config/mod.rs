@@ -7,7 +7,7 @@ use std::{default, io::Stdout};
 use clap::ArgMatches;
 
 // ratatui
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{backend::CrosstermBackend, widgets::ListState, Terminal};
 
 // Internal
 use crate::settings::Settings;
@@ -19,8 +19,9 @@ pub struct MusicBoxConfig {
     settings: Option<Settings>,
     value_input: String,
     output_path: String,
-    current_action: CurrentAction,
-    current_section: CurrentSection,
+    current_setting: usize,
+    current_setting_max_length: usize,
+    list_state: ListState,
 }
 
 impl MusicBoxConfig {
@@ -30,25 +31,4 @@ impl MusicBoxConfig {
             ..Default::default()
         }
     }
-}
-
-#[derive(Debug, Default)]
-pub enum CurrentAction {
-    #[default]
-    Viewing,
-    Editing,
-}
-
-#[derive(Debug, Default)]
-pub enum CurrentSection {
-    #[default]
-    Overview,
-    Holes,
-    Staff(Staff),
-}
-
-#[derive(Debug)]
-pub enum Staff {
-    Lines,
-    BoundingBox,
 }

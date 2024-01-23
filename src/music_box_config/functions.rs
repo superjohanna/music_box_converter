@@ -6,7 +6,7 @@ use std::{
 
 // crossterm
 use crossterm::{
-    event::{self, KeyCode, KeyEventKind},
+    event::{self, Event, KeyCode, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
@@ -20,7 +20,7 @@ use ratatui::{
 use serde::Serialize;
 
 // Internal
-use super::{ui::ui, CurrentAction, MusicBoxConfig};
+use super::{ui::ui, MusicBoxConfig};
 use crate::{prelude::*, settings::Settings};
 
 impl MusicBoxConfig {
@@ -47,10 +47,30 @@ impl MusicBoxConfig {
                 })
                 .to_res()?;
 
+            /* if event::poll(std::time::Duration::from_millis(100)).to_res()? &&
+               let event::Event::Key(key) = event::read().to_res()? && key.kind == KeyEventKind::Press {
+
+               }
+            */
+
+            #[allow(clippy::collapsible_if)]
             if event::poll(std::time::Duration::from_millis(100)).to_res()? {
-                if let event::Event::Key(key) = event::read().to_res()? {
-                    if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                        break;
+                if let Event::Key(key) = event::read().to_res()? {
+                    if key.kind == KeyEventKind::Press {
+                        match key.code {
+                            KeyCode::Char('q') => break,
+                            KeyCode::Up => {
+                                if self.current_setting != 0 {
+                                    self.current_setting -= 1;
+                                }
+                            }
+                            KeyCode::Down => {
+                                if self.current_setting != self.current_setting_max_length {
+                                    self.current_setting += 1;
+                                }
+                            }
+                            _ => (),
+                        }
                     }
                 }
             }
