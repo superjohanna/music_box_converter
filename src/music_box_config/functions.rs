@@ -47,12 +47,6 @@ impl MusicBoxConfig {
                 })
                 .to_res()?;
 
-            /* if event::poll(std::time::Duration::from_millis(100)).to_res()? &&
-               let event::Event::Key(key) = event::read().to_res()? && key.kind == KeyEventKind::Press {
-
-               }
-            */
-
             #[allow(clippy::collapsible_if)]
             if event::poll(std::time::Duration::from_millis(100)).to_res()? {
                 if let Event::Key(key) = event::read().to_res()? {
@@ -61,17 +55,8 @@ impl MusicBoxConfig {
                     }
                     if key.modifiers == KeyModifiers::CONTROL {
                         match key.code {
-                            KeyCode::Char('q') => break,
-                            KeyCode::Up => {
-                                if self.current_setting != 0 {
-                                    self.current_setting -= 1;
-                                }
-                            }
-                            KeyCode::Down => {
-                                if self.current_setting != self.current_setting_max_length {
-                                    self.current_setting += 1;
-                                }
-                            }
+                            KeyCode::Char('x') => break,
+                            KeyCode::Char('l') => self.value_input = String::new(),
                             _ => (),
                         }
                     } else if key.modifiers == KeyModifiers::SHIFT {
@@ -79,14 +64,55 @@ impl MusicBoxConfig {
                             KeyCode::Char(c) => {
                                 self.value_input += &c.to_uppercase().collect::<String>()
                             }
+                            KeyCode::Backspace => {
+                                self.value_input.pop().res()?;
+                            }
                             _ => continue,
                         }
                     } else if key.modifiers == KeyModifiers::NONE {
                         match key.code {
                             KeyCode::Char(c) => self.value_input.push(c),
+                            KeyCode::Backspace => {
+                                self.value_input.pop().res()?;
+                            }
+                            KeyCode::Up => {
+                                if self.settings_index != 0 {
+                                    self.settings_index -= 1;
+                                    self.update_settings_index();
+                                }
+                            }
+                            KeyCode::Down => {
+                                if self.settings_index != self.settings_arr_length {
+                                    self.settings_index += 1;
+                                    self.update_settings_index();
+                                }
+                            }
                             _ => continue,
                         }
                     }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn update_settings_index(&mut self) -> Result<()> {
+        // Return if we are at a group. After all we can't write to a group
+        if self.settings_index_bool[self.settings_index] {
+            return Ok(());
+        }
+        // Sadly we need to do this. It's not optimal but I don't want to delete everything.
+        // This kinda implies that my code is usually optimal which it certainly is not. haha  🫠
+        let mut index = 0usize;
+        for group in &self.groups {
+            index += 1;
+            if self.settings_index == index {
+                //panic!("This code should be unreachable. Something went terribly wrong. update_settings_index()");
+            }
+            for item in group.items.iter() {
+                index += 1;
+                if self.settings_index == index {
+                    // AHHH This doens't work ;(
                 }
             }
         }

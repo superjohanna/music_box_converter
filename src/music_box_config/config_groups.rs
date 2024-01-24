@@ -12,9 +12,13 @@ pub type GroupList = Vec<SettingsGroup>;
 
 /// A trait to implement Indexing for ```GroupList```
 pub trait GroupListTrait {
+    /// Finds the index from a name. Returns ```None``` if the item is not found.
     fn index_from_name(&self, name: String) -> Option<usize>;
+    /// Finds the length of the longest human readable name of the items
     fn max_length(&self) -> Option<usize>;
-    fn as_string(&self) -> String;
+    /// Returns a ```Vec<bool>```, which contains as many members as there are groups and items,
+    /// and which denote if the item with this index is a group or an item
+    fn get_list_bool(&self) -> Vec<bool>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -47,15 +51,15 @@ impl GroupListTrait for GroupList {
             .map(|x| x.max_length)
     }
 
-    fn as_string(&self) -> String {
-        let mut s = String::new();
+    fn get_list_bool(&self) -> Vec<bool> {
+        let mut ret = Vec::<bool>::new();
         for group in self {
-            s.push_str(&group.name);
-            for item in &group.items {
-                s.push_str(&item.human_readable_name)
+            ret.push(true);
+            for item in group.items.iter() {
+                ret.push(false);
             }
         }
-        s
+        ret
     }
 }
 

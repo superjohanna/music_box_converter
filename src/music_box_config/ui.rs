@@ -15,14 +15,15 @@ use crate::music_box_config::config_groups::GroupListTrait;
 use super::MusicBoxConfig;
 
 pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
-    // Set the maximum length which is used for the key input
-    app.current_setting_max_length = app.groups.len() - 1;
+    // Set the maximum length which is used for the key input.
+    app.settings_arr_length = app.groups.len() - 1;
     app.groups
         .iter()
-        .for_each(|x| app.current_setting_max_length += x.items.len());
+        .for_each(|x| app.settings_arr_length += x.items.len());
 
     // Chunks
     let (chunks_main, chunks_sub, chunks_sub_sub) =
+        // max_char_length = length of the largest item. This panics if there are no settings. Unwrap is okay.
         chunks(f.size(), app.groups.max_length().unwrap());
 
     // Block
@@ -33,6 +34,9 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     // Title
     f.render_widget(title().block(block.clone()), chunks_main[0]);
+
+    // Editor (The part where text pops up if you press keys).
+    f.render_widget(editor(app).block(Block::default()), chunks_sub_sub[0]);
 
     // Navbar
     f.render_widget(
@@ -54,7 +58,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         }
     }
 
-    list[app.current_setting] = list[app.current_setting].clone().underlined();
+    list[app.settings_index] = list[app.settings_index].clone().underlined();
 
     let list = List::new(list).block(block.clone());
 
@@ -64,13 +68,13 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]>) {
     let chunks_main = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Max(3), Constraint::Min(1), Constraint::Max(2)])
+        .constraints([Constraint::Max(3), Constraint::Min(1), Constraint::Max(3)])
         .split(a);
 
     let chunks_sub = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            // length of the largest item plus 2 for the borders. This panics if there are no settings. Unwrap is okay
+            // Plus two for the borders.
             Constraint::Max(max_char_length as u16 + 2u16),
             Constraint::Min(1),
         ])
@@ -84,18 +88,19 @@ fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]
     (chunks_main, chunks_sub, chunks_sub_sub)
 }
 
-fn title<'a>() -> Paragraph<'a> {
-    Paragraph::new(Text::styled(
-        "Music box configurator",
-        Style::default().fg(Color::White),
-    ))
-    .alignment(Alignment::Center)
+fn title() -> Paragraph<'static> {
+    Paragraph::new(Text::styled("Music box configurator", Style::default()))
+        .alignment(Alignment::Center)
 }
 
-fn navbar<'a>() -> Paragraph<'a> {
-    Paragraph::new(Span::styled(
-        "^S Save | ^O Open | ^Q Quit",
-        Style::default(),
-    ))
+fn editor(app: &MusicBoxConfig) -> Paragraph<'_> {
+    Paragraph::new(Text::styled(&app.value_input, Style::default()))
+}
+
+fn navbar() -> Paragraph<'static> {
+    Paragraph::new(vec![
+        Line::from("^S Save | ^O Open | ^X eXit"),
+        Line::from("^L delete Line | "),
+    ])
     .alignment(Alignment::Center)
 }

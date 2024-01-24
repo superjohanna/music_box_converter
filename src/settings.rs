@@ -37,7 +37,7 @@ impl Settings {
         staff_bounding_box_thickness_mm,
         staff_bounding_box_top_bottom_distance_mm,
         staff_bounding_box_top_bottom_colour,
-        staff_bounding_box_left_right_colour
+        staff_bounding_box_left_right_colour,
     );
 
     // To add a new group with new items
@@ -64,7 +64,7 @@ impl Settings {
         hole_colour,
         "Hole colour",
         ValueType::Colour,
-        String
+        String,
     );
 
     // Staff general
@@ -74,7 +74,7 @@ impl Settings {
         staff_offset_mm,
         "Staff offset (mm)",
         ValueType::Number,
-        f64
+        f64,
     );
 
     // Staff Lines
@@ -88,7 +88,7 @@ impl Settings {
         staff_line_colour,
         "Staff line colour",
         ValueType::Colour,
-        String
+        String,
     );
 
     // Bounding Box
@@ -110,6 +110,6 @@ impl Settings {
         staff_bounding_box_left_right_colour,
         "Staff bounding box left/ right colour",
         ValueType::Colour,
-        String
+        String,
     );
 }
