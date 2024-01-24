@@ -8,7 +8,7 @@ type Settings = crate::settings::Settings;
 const SUB_PREFIX: &str = "\u{2022}"; // • https://www.compart.com/en/unicode/U+2022
 
 /// Just a ```Vec<SettingsGroup>```
-type GroupList = Vec<SettingsGroup>;
+pub type GroupList = Vec<SettingsGroup>;
 
 /// A trait to implement Indexing for ```GroupList```
 pub trait GroupListTrait {

@@ -6,7 +6,7 @@ use std::{
 
 // crossterm
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind},
+    event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
@@ -56,7 +56,10 @@ impl MusicBoxConfig {
             #[allow(clippy::collapsible_if)]
             if event::poll(std::time::Duration::from_millis(100)).to_res()? {
                 if let Event::Key(key) = event::read().to_res()? {
-                    if key.kind == KeyEventKind::Press {
+                    if !(key.kind == KeyEventKind::Press) {
+                        continue;
+                    }
+                    if key.modifiers == KeyModifiers::CONTROL {
                         match key.code {
                             KeyCode::Char('q') => break,
                             KeyCode::Up => {
@@ -70,6 +73,18 @@ impl MusicBoxConfig {
                                 }
                             }
                             _ => (),
+                        }
+                    } else if key.modifiers == KeyModifiers::SHIFT {
+                        match key.code {
+                            KeyCode::Char(c) => {
+                                self.value_input += &c.to_uppercase().collect::<String>()
+                            }
+                            _ => continue,
+                        }
+                    } else if key.modifiers == KeyModifiers::NONE {
+                        match key.code {
+                            KeyCode::Char(c) => self.value_input.push(c),
+                            _ => continue,
                         }
                     }
                 }

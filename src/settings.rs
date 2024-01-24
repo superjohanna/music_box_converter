@@ -2,9 +2,9 @@
 use serde_derive::{Deserialize, Serialize};
 
 // Internal
-use crate::music_box_config::ui::ui_groups::ValueType;
-use crate::ui_macro_add_item;
-use crate::ui_macro_list_items;
+use crate::config_macro_add_item;
+use crate::config_macro_list_items;
+use crate::music_box_config::config_groups::ValueType;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Settings {
@@ -27,7 +27,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    ui_macro_list_items!(
+    config_macro_list_items!(
         Settings,
         hole_radius_mm,
         hole_colour,
@@ -54,7 +54,7 @@ impl Settings {
     */
 
     //Holes
-    ui_macro_add_item!(
+    config_macro_add_item!(
         self,
         "Holes",
         hole_radius_mm,
@@ -68,7 +68,7 @@ impl Settings {
     );
 
     // Staff general
-    ui_macro_add_item!(
+    config_macro_add_item!(
         self,
         "Staff general",
         staff_offset_mm,
@@ -78,7 +78,7 @@ impl Settings {
     );
 
     // Staff Lines
-    ui_macro_add_item!(
+    config_macro_add_item!(
         self,
         "Staff Lines",
         staff_line_thickness_mm,
@@ -92,7 +92,7 @@ impl Settings {
     );
 
     // Bounding Box
-    ui_macro_add_item!(
+    config_macro_add_item!(
         self,
         "Bounding Box",
         staff_bounding_box_thickness_mm,
