@@ -1,6 +1,8 @@
 // std
 use std::default;
 
+use serde_json::Value;
+
 // ======= Settings =======
 // Change this line if you want to change the settings struct used
 type Settings = crate::settings::Settings;
@@ -18,7 +20,7 @@ pub trait GroupListTrait {
     fn max_length(&self) -> Option<usize>;
     /// Returns a ```Vec<bool>```, which contains as many members as there are groups and items,
     /// and which denote if the item with this index is a group or an item
-    fn get_list_bool(&self) -> Vec<bool>;
+    fn get_list_value_type(&self) -> Vec<ValueType>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -51,15 +53,15 @@ impl GroupListTrait for GroupList {
             .map(|x| x.max_length)
     }
 
-    fn get_list_bool(&self) -> Vec<bool> {
-        let mut ret = Vec::<bool>::new();
+    fn get_list_value_type(&self) -> Vec<ValueType> {
+        let mut v = Vec::<ValueType>::new();
         for group in self {
-            ret.push(true);
+            v.push(ValueType::None);
             for item in group.items.iter() {
-                ret.push(false);
+                v.push(item.value_type);
             }
         }
-        ret
+        v
     }
 }
 
@@ -80,11 +82,21 @@ impl SettingsItem {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum ValueType {
+    /// This means it is a group instead of an item
     #[default]
+    None,
+    /// The value is a number
     Number,
+    /// The value is a colour
     Colour,
+}
+
+impl ValueType {
+    pub fn is_none(&self) -> bool {
+        matches!(self, ValueType::None)
+    }
 }
 
 pub fn get_groups() -> GroupList {

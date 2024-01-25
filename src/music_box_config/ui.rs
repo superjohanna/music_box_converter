@@ -5,7 +5,7 @@ use ratatui::{
     layout::{self, Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Widget},
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Widget, Wrap},
     Frame,
 };
 
@@ -15,6 +15,9 @@ use crate::music_box_config::config_groups::GroupListTrait;
 use super::MusicBoxConfig;
 
 pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
+    // Update liststate
+    app.list_state.select(Some(app.settings_index));
+
     // Set the maximum length which is used for the key input.
     app.settings_arr_length = app.groups.len() - 1;
     app.groups
@@ -33,10 +36,16 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         .border_type(BorderType::Rounded);
 
     // Title
-    f.render_widget(title().block(block.clone()), chunks_main[0]);
+    f.render_widget(
+        title().block(block.clone().borders(Borders::BOTTOM)),
+        chunks_main[0],
+    );
 
     // Editor (The part where text pops up if you press keys).
-    f.render_widget(editor(app).block(Block::default()), chunks_sub_sub[0]);
+    f.render_widget(
+        editor(app).block(block.clone().title("Editor")),
+        chunks_sub_sub[0],
+    );
 
     // Navbar
     f.render_widget(
@@ -58,17 +67,40 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         }
     }
 
-    list[app.settings_index] = list[app.settings_index].clone().underlined();
-
-    let list = List::new(list).block(block.clone());
+    let list = List::new(list)
+        .block(block.clone().title("Settings"))
+        //.highlight_style(Style::default().underlined())
+        .highlight_symbol(">>");
 
     f.render_stateful_widget(list, chunks_sub[0], &mut app.list_state);
+
+    // Check for popup
+    // Shamelessly stolen from https://github.com/fdehau/tui-rs/blob/master/examples/popup.rs
+    if app.parse_error {
+        let block = Block::default()
+            .title("Error")
+            .borders(Borders::ALL)
+            .title_alignment(Alignment::Center);
+        let area = centered_rect(60, 20, f.size());
+        let pop_text = Paragraph::new(vec![
+            Line::from("The value you inputted is not a valid float."),
+            Line::from("An Example of a valid float would be any integer ('50') or a two integers seperated by a period ('50.1')"),
+            Line::from("Enter to continue..."),
+        ]).block(block).wrap(Wrap { trim: false });
+
+        let area_sub = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Min(1), Constraint::Max(1)])
+            .split(area);
+        f.render_widget(Clear, area);
+        f.render_widget(pop_text, area);
+    }
 }
 
 fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]>) {
     let chunks_main = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Max(3), Constraint::Min(1), Constraint::Max(3)])
+        .constraints([Constraint::Max(2), Constraint::Min(1), Constraint::Max(3)])
         .split(a);
 
     let chunks_sub = Layout::default()
@@ -82,7 +114,7 @@ fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]
 
     let chunks_sub_sub = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Max(1), Constraint::Min(1)])
+        .constraints([Constraint::Max(3), Constraint::Min(1)])
         .split(chunks_sub[1]);
 
     (chunks_main, chunks_sub, chunks_sub_sub)
@@ -94,7 +126,7 @@ fn title() -> Paragraph<'static> {
 }
 
 fn editor(app: &MusicBoxConfig) -> Paragraph<'_> {
-    Paragraph::new(Text::styled(&app.value_input, Style::default()))
+    Paragraph::new(Text::styled(&app.input_buf, Style::default()))
 }
 
 fn navbar() -> Paragraph<'static> {
@@ -103,4 +135,30 @@ fn navbar() -> Paragraph<'static> {
         Line::from("^L delete Line | "),
     ])
     .alignment(Alignment::Center)
+}
+
+fn centered_rect(x: u16, y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Percentage((100 - y) / 2),
+                Constraint::Percentage(y),
+                Constraint::Percentage((100 - y) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage((100 - x) / 2),
+                Constraint::Percentage(x),
+                Constraint::Percentage((100 - x) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(popup_layout[1])[1]
 }

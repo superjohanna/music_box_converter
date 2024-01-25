@@ -20,8 +20,11 @@ use ratatui::{
 use serde::Serialize;
 
 // Internal
-use super::{ui::ui, MusicBoxConfig};
-use crate::{prelude::*, settings::Settings};
+use super::{config_groups::ValueType, ui::ui, MusicBoxConfig};
+use crate::{
+    prelude::*,
+    settings::{Settings, StringOrF64},
+};
 
 impl MusicBoxConfig {
     pub fn run(&mut self) -> Result<()> {
@@ -56,35 +59,39 @@ impl MusicBoxConfig {
                     if key.modifiers == KeyModifiers::CONTROL {
                         match key.code {
                             KeyCode::Char('x') => break,
-                            KeyCode::Char('l') => self.value_input = String::new(),
+                            KeyCode::Char('l') => self.input_buf = String::new(),
                             _ => (),
                         }
                     } else if key.modifiers == KeyModifiers::SHIFT {
                         match key.code {
                             KeyCode::Char(c) => {
-                                self.value_input += &c.to_uppercase().collect::<String>()
+                                self.input_buf += &c.to_uppercase().collect::<String>()
                             }
                             KeyCode::Backspace => {
-                                self.value_input.pop().res()?;
+                                self.input_buf.pop().res()?;
                             }
                             _ => continue,
                         }
                     } else if key.modifiers == KeyModifiers::NONE {
                         match key.code {
-                            KeyCode::Char(c) => self.value_input.push(c),
+                            KeyCode::Char(c) => self.input_buf.push(c),
                             KeyCode::Backspace => {
-                                self.value_input.pop().res()?;
+                                self.input_buf.pop().res()?;
                             }
                             KeyCode::Up => {
                                 if self.settings_index != 0 {
+                                    if self.update_settings_index(true).is_err() {
+                                        continue;
+                                    }
                                     self.settings_index -= 1;
-                                    self.update_settings_index();
                                 }
                             }
                             KeyCode::Down => {
                                 if self.settings_index != self.settings_arr_length {
+                                    if self.update_settings_index(false).is_err() {
+                                        continue;
+                                    }
                                     self.settings_index += 1;
-                                    self.update_settings_index();
                                 }
                             }
                             _ => continue,
@@ -96,26 +103,48 @@ impl MusicBoxConfig {
         Ok(())
     }
 
-    fn update_settings_index(&mut self) -> Result<()> {
-        // Return if we are at a group. After all we can't write to a group
-        if self.settings_index_bool[self.settings_index] {
-            return Ok(());
-        }
-        // Sadly we need to do this. It's not optimal but I don't want to delete everything.
-        // This kinda implies that my code is usually optimal which it certainly is not. haha  🫠
-        let mut index = 0usize;
-        for group in &self.groups {
-            index += 1;
-            if self.settings_index == index {
-                //panic!("This code should be unreachable. Something went terribly wrong. update_settings_index()");
-            }
-            for item in group.items.iter() {
-                index += 1;
-                if self.settings_index == index {
-                    // AHHH This doens't work ;(
+    fn update_settings_index(&mut self, negative: bool) -> Result<()> {
+        let (prev_value_type, prev_index) = (
+            self.settings_index_value_type[self.settings_index],
+            self.settings_index,
+        );
+        let (next_value_type, next_index) = match negative {
+            true => (
+                self.settings_index_value_type[self.settings_index - 1],
+                prev_index - 1,
+            ),
+            false => (
+                self.settings_index_value_type[self.settings_index + 1],
+                prev_index + 1,
+            ),
+        };
+
+        let prev_op: Option<StringOrF64> = match prev_value_type {
+            ValueType::None => None,
+            ValueType::Colour => Some(StringOrF64::String(self.input_buf.clone())),
+            ValueType::Number => {
+                let res = self.input_buf.parse();
+                match res {
+                    Ok(t) => Some(StringOrF64::F64(t)),
+                    Err(_) => {
+                        self.parse_error = true;
+                        return Err(Error::Generic("Couldn't parse".to_string()));
+                    }
                 }
             }
+        };
+
+        if let Some(t) = prev_op {
+            self.settings.res_mut()?.set(prev_index, &t);
         }
+
+        let next_op = self.settings.res()?.get(next_index);
+
+        if let Some(t) = next_op {
+            self.input_buf = t.to_string();
+            return Ok(());
+        }
+        self.input_buf = "Group. Not editable.".to_string();
         Ok(())
     }
 
