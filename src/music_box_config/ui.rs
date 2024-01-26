@@ -84,10 +84,54 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         let area = centered_rect(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
             Line::from("The value you inputted is not a valid float."),
-            Line::from("An Example of a valid float would be any integer ('50') or a two integers seperated by a period ('50.1')"),
+            Line::from("An Example of a valid float would be any integer ('50') or a two integers seperated by a period ('50.1')."),
             Line::from("Enter to continue..."),
         ]).block(block).wrap(Wrap { trim: false });
 
+        let area_sub = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Min(1), Constraint::Max(1)])
+            .split(area);
+        f.render_widget(Clear, area);
+        f.render_widget(pop_text, area);
+    }
+
+    // Save file popup
+    if let Some(t) = &app.save_file {
+        let block = Block::default()
+            .title("Save")
+            .borders(Borders::ALL)
+            .title_alignment(Alignment::Center);
+        let area = centered_rect(60, 20, f.size());
+        let pop_text = Paragraph::new(vec![
+            Line::from("Saving to:"),
+            Line::from("->".to_string() + t.as_str()),
+            Line::from("Escape to close dialogue. Enter to save."),
+        ])
+        .block(block)
+        .wrap(Wrap { trim: false });
+        let area_sub = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Min(1), Constraint::Max(1)])
+            .split(area);
+        f.render_widget(Clear, area);
+        f.render_widget(pop_text, area);
+    }
+
+    // Open file popup
+    if let Some(t) = &app.open_file {
+        let block = Block::default()
+            .title("Open")
+            .borders(Borders::ALL)
+            .title_alignment(Alignment::Center);
+        let area = centered_rect(60, 20, f.size());
+        let pop_text = Paragraph::new(vec![
+            Line::from("Opening:"),
+            Line::from("->".to_string() + t.as_str()),
+            Line::from("Escape to close dialogue. Enter to open."),
+        ])
+        .block(block)
+        .wrap(Wrap { trim: false });
         let area_sub = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Min(1), Constraint::Max(1)])

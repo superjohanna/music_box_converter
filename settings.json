@@ -7,5 +7,7 @@
     "staff_bounding_box_top_bottom_colour": "#ff00ff",
     "staff_bounding_box_top_bottom_distance_mm": 5.805,
     "staff_bounding_box_thickness_mm": 2,
-    "staff_bounding_box_left_right_colour": "#00ff00"
+    "staff_bounding_box_left_right_colour": "#00ff00",
+    "paper_size_x": 20,
+    "paper_size_y": 20
 }

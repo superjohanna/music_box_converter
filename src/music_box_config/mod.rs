@@ -34,7 +34,7 @@ pub struct MusicBoxConfig {
     input_buf: String,
     /// The stored output path / input path. This will be the file that was passed by arguments or the file that was previously saved.
     output_path: String,
-    /// Index of the item that is currently being edited (The underlined one in the UI).
+    /// Index of the item that is currently being edited (The one with the '>>' before it).
     settings_index: usize,
     /// The number of settings + groups there are. We need this to stop the user if they are at the bottom of the list and press down.
     settings_arr_length: usize,
@@ -42,8 +42,14 @@ pub struct MusicBoxConfig {
     list_state: ListState,
     /// This is a ```Vec<ValueType>``` which is just a representation of the "flattened" settings list.  
     settings_index_value_type: Vec<ValueType>,
+    /// Indicates wether we have a popup open
+    popup: bool,
     /// Indicates wether we had an error when parsing ```Self::input_buf```
     parse_error: bool,
+    /// Indicates wether we are trying to open a file
+    open_file: Option<String>,
+    /// Indicates wether we are trying to save a file
+    save_file: Option<String>,
 }
 
 impl MusicBoxConfig {
@@ -55,6 +61,7 @@ impl MusicBoxConfig {
             settings_index_value_type: groups.get_list_value_type(),
             input_buf: "Group. Not editable.".to_string(),
             list_state: ListState::default().with_selected(Some(0usize)),
+            output_path: args.get_one::<String>("io_settings").unwrap().clone(),
             ..Default::default()
         }
     }

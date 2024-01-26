@@ -19,11 +19,15 @@ pub struct Settings {
     pub staff_line_thickness_mm: f64,
     pub staff_line_colour: String,
 
-    // Bounding Box
+    // Bounding box
     pub staff_bounding_box_thickness_mm: f64,
     pub staff_bounding_box_top_bottom_distance_mm: f64,
     pub staff_bounding_box_top_bottom_colour: String,
     pub staff_bounding_box_left_right_colour: String,
+
+    // Paper sizes
+    pub paper_size_x: f64,
+    pub paper_size_y: f64,
 }
 
 impl Settings {
@@ -38,11 +42,14 @@ impl Settings {
             // Staff lines
             6 => self.staff_line_thickness_mm = val.c_to_f64().unwrap(),
             7 => self.staff_line_colour = val.c_to_string().unwrap(),
-            // Bounding Box
+            // Bounding box
             9 => self.staff_bounding_box_thickness_mm = val.c_to_f64().unwrap(),
             10 => self.staff_bounding_box_top_bottom_distance_mm = val.c_to_f64().unwrap(),
             11 => self.staff_bounding_box_top_bottom_colour = val.c_to_string().unwrap(),
             12 => self.staff_bounding_box_left_right_colour = val.c_to_string().unwrap(),
+            // Paper sizes
+            14 => self.paper_size_x = val.c_to_f64().unwrap(),
+            15 => self.paper_size_y = val.c_to_f64().unwrap(),
             _ => (),
         }
     }
@@ -58,7 +65,7 @@ impl Settings {
             // Staff lines
             6 => Some(StringOrF64::from_f64(self.staff_line_thickness_mm)),
             7 => Some(StringOrF64::from_string(self.staff_line_colour.clone())),
-            // Bounding Box
+            // Bounding box
             9 => Some(StringOrF64::from_f64(self.staff_bounding_box_thickness_mm)),
             10 => Some(StringOrF64::from_f64(
                 self.staff_bounding_box_top_bottom_distance_mm,
@@ -69,6 +76,9 @@ impl Settings {
             12 => Some(StringOrF64::from_string(
                 self.staff_bounding_box_left_right_colour.clone(),
             )),
+            // Paper sizes
+            14 => Some(StringOrF64::from_f64(self.paper_size_x)),
+            15 => Some(StringOrF64::from_f64(self.paper_size_y)),
             _ => None,
         }
     }
@@ -84,6 +94,8 @@ impl Settings {
         staff_bounding_box_top_bottom_distance_mm,
         staff_bounding_box_top_bottom_colour,
         staff_bounding_box_left_right_colour,
+        paper_size_x,
+        paper_size_y,
     );
 
     // To add a new group with new items
@@ -141,7 +153,7 @@ impl Settings {
     // Bounding Box
     config_macro_add_item!(
         self,
-        "Bounding Box",
+        "Bounding box",
         staff_bounding_box_thickness_mm,
         "Staff bounding box thickness (mm)",
         ValueType::Number,
@@ -158,6 +170,20 @@ impl Settings {
         "Staff bounding box left/ right colour",
         ValueType::Colour,
         String,
+    );
+
+    // Paper size
+    config_macro_add_item!(
+        self,
+        "Paper size",
+        paper_size_x,
+        "Paper length (mm)",
+        ValueType::Number,
+        f64,
+        paper_size_y,
+        "Paper height (mm)",
+        ValueType::Number,
+        f64,
     );
 }
 

@@ -213,7 +213,7 @@ impl MusicBoxConvert {
         let mut overflow = u64::MIN;
 
         for event in self.track.clone().unwrap().iter() {
-            if (event.abs - first_note_pos + overflow) as f64 * self.scale.res()?.x > PAPER_SIZE.x {
+            if (event.abs - first_note_pos + overflow) as f64 * self.scale.res()?.x > self.settings.res()?.paper_size_x {
                 self.draw_page(pages.last().unwrap(), overflow);
                 overflow = event.abs - pages.last().unwrap().last().unwrap().abs;
                 pages.push(Vec::<Event>::new());
@@ -447,7 +447,3 @@ impl MusicBoxConvert {
     }
 }
 
-pub const PAPER_SIZE: Vec2<f64> = Vec2 {
-    x: 297f64,
-    y: 210f64,
-};
