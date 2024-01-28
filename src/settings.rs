@@ -120,10 +120,12 @@ impl Settings {
         "Hole radius (mm)",
         ValueType::Number,
         f64,
+        HELP_HOLE_RADIUS;
         hole_colour,
         "Hole colour",
         ValueType::Colour,
         String,
+        HELP_HOLE_COLOUR;
     );
 
     // Staff general
@@ -134,6 +136,7 @@ impl Settings {
         "Staff offset (mm)",
         ValueType::Number,
         f64,
+        HELP_STAFF_OFFSET;
     );
 
     // Staff Lines
@@ -144,10 +147,12 @@ impl Settings {
         "Staff line thickness (mm)",
         ValueType::Number,
         f64,
+        HELP_STAFF_LINE_THICKNESS;
         staff_line_colour,
         "Staff line colour",
         ValueType::Colour,
         String,
+        HELP_STAFF_LINE_COLOUR;
     );
 
     // Bounding Box
@@ -158,18 +163,22 @@ impl Settings {
         "Staff bounding box thickness (mm)",
         ValueType::Number,
         f64,
+        HELP_BOUNDING_BOX_THICKNESS;
         staff_bounding_box_top_bottom_distance_mm,
         "Staff bounding box top/ bottom distance (mm)",
         ValueType::Number,
         f64,
+        HELP_BOUNDING_BOX_TOP_BOTTOM_DISTANCE;
         staff_bounding_box_top_bottom_colour,
         "Staff bounding box top/ bottom colour",
         ValueType::Colour,
         String,
+        HELP_BOUNDING_BOX_TOP_BOTTOM_COLOUR;
         staff_bounding_box_left_right_colour,
         "Staff bounding box left/ right colour",
         ValueType::Colour,
         String,
+        HELP_BOUNDING_BOX_LEFT_RIGHT_COLOUR;
     );
 
     // Paper size
@@ -180,10 +189,12 @@ impl Settings {
         "Paper length (mm)",
         ValueType::Number,
         f64,
+        HELP_PAPER_LENGTH;
         paper_size_y,
         "Paper height (mm)",
         ValueType::Number,
         f64,
+        HELP_PAPER_HEIGHT;
     );
 }
 
@@ -225,3 +236,37 @@ impl ToString for StringOrF64 {
         }
     }
 }
+
+// Help
+
+// Holes
+const HELP_HOLE_RADIUS: &str =
+    r#"This is the radius of the holes. The red circles in the example file."#;
+
+const HELP_HOLE_COLOUR: &str =
+    r#"This is the colour of the holes. The red circles in the example file."#;
+
+// Staff
+const HELP_STAFF_OFFSET: &str = r#"This is the offset between the top left corner of the file and the corner of the bounding box."#;
+
+// Staff lines
+const HELP_STAFF_LINE_THICKNESS: &str =
+    r#"This is the thickness of the note lines. They are black in the example file. "#;
+
+const HELP_STAFF_LINE_COLOUR: &str =
+    r#"This is the colour of the note lines. They are black in the example file."#;
+
+// Bounding box
+const HELP_BOUNDING_BOX_THICKNESS: &str =
+    r#"This is the thickness of the bounding box. They are green and magenta in the example file."#;
+
+const HELP_BOUNDING_BOX_TOP_BOTTOM_DISTANCE: &str = r#"This is the distance of the top and bottom bounding box lines to the staff. They are green in the example file."#;
+
+const HELP_BOUNDING_BOX_TOP_BOTTOM_COLOUR: &str = r#"This is the colour of the top and bottom bounding box lines. In the example file they are green."#;
+
+const HELP_BOUNDING_BOX_LEFT_RIGHT_COLOUR: &str = r#"This is the colour of the left and right bounding box lines. In the example file they are magenta."#;
+
+// Paper size
+const HELP_PAPER_LENGTH: &str = r#"This is the length of the paper. If the length of the next note exceeds the paper length it will start a new file."#;
+
+const HELP_PAPER_HEIGHT: &str = r#"This setting is currently unused."#;

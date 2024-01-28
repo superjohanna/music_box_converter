@@ -14,6 +14,10 @@ impl Track {
             min_distance: u64::MAX,
             max_distance: u64::MIN,
         };
+        info!(
+            "Transposing {}",
+            if *transpose { "enabled" } else { "disabled" }
+        );
         // Current time used for assigning the absolute time value for each Event
         let mut current_time = 0u64;
         // Array used for calculating the min and max distance
@@ -32,6 +36,7 @@ impl Track {
 
             // Musescore doesn't write a NoteOff event but instead writes a NoteOn Event with zero velocity
             // We need to check for that...
+            // Why? This took soooo long to figure out. Why not use NoteOff if the have it?? Ahhh!
             if vel == 0 {
                 continue;
             }
@@ -41,9 +46,8 @@ impl Track {
                 if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
                     // Not playable
                     info!(
-                        "Note '{0}' at '{current_time}' not playable with music box '{1}'. Skipping.",
+                        "Note '{0}' at '{current_time}' not playable with music box . Skipping.",
                         Note::from_midi_pitch(pitch),
-                        music_box.name
                     );
                     continue;
                 }
@@ -51,19 +55,19 @@ impl Track {
                 // Transpose and unplayable note
                 let note = Note::from_midi_pitch(pitch);
                 let note_octave = note.get_octave();
+                // This should cover the whole midi pitch spectrum. My converted notes go far beyond this so it doesn't matter if the notes have negative hz or are over 20khz
                 for i in -1..=9 {
                     if !music_box.is_valid_note(&note.transpose(i)) {
                         continue;
                     }
-                    info!("Transposing note from octave {note_octave} to {i}");
+                    info!("Transposing note from octave '{note_octave}' to '{i}'");
                     pitch = note.transpose(i).to_midi_pitch();
                     break;
                 }
                 // Couldn't transpose
                 info!(
-                    "Note '{0}' at '{current_time}' not playable with music box '{1}'. Skipping.",
+                    "Note '{0}' at '{current_time}' not playable with music box. Skipping.",
                     Note::from_midi_pitch(pitch),
-                    music_box.name
                 );
                 continue;
             }
@@ -79,8 +83,9 @@ impl Track {
                     output.min_distance = std::cmp::min(distance, output.min_distance);
                     output.max_distance = std::cmp::max(distance, output.max_distance);
                 } else {
-                    warn!(
-                        "Two notes in your midi are overlapping (having the same time). Ignoring."
+                    info!(
+                        "Two notes '{0}' are overlapping at '{current_time}'. Ignoring for distance calculation.",
+                        Note::from_midi_pitch(pitch),
                     )
                 }
             }

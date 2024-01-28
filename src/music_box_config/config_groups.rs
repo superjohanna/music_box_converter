@@ -20,7 +20,7 @@ pub trait GroupListTrait {
     fn max_length(&self) -> Option<usize>;
     /// Returns a ```Vec<bool>```, which contains as many members as there are groups and items,
     /// and which denote if the item with this index is a group or an item
-    fn get_list_value_type(&self) -> Vec<ValueType>;
+    fn get_list_value_type_and_help(&self) -> Vec<(ValueType, String)>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -53,12 +53,12 @@ impl GroupListTrait for GroupList {
             .map(|x| x.max_length)
     }
 
-    fn get_list_value_type(&self) -> Vec<ValueType> {
-        let mut v = Vec::<ValueType>::new();
+    fn get_list_value_type_and_help(&self) -> Vec<(ValueType, String)> {
+        let mut v = Vec::<(ValueType, String)>::new();
         for group in self {
-            v.push(ValueType::None);
+            v.push((ValueType::None, String::new()));
             for item in group.items.iter() {
-                v.push(item.value_type);
+                v.push((item.value_type, item.help.clone()));
             }
         }
         v
@@ -70,14 +70,21 @@ pub struct SettingsItem {
     pub name: String,
     pub human_readable_name: String,
     pub value_type: ValueType,
+    pub help: String,
 }
 
 impl SettingsItem {
-    pub fn new(name: String, human_readable_name: String, value_type: ValueType) -> Self {
+    pub fn new(
+        name: String,
+        human_readable_name: String,
+        value_type: ValueType,
+        help: String,
+    ) -> Self {
         Self {
             name,
             human_readable_name,
             value_type,
+            help,
         }
     }
 }
@@ -102,7 +109,7 @@ impl ValueType {
 pub fn get_groups() -> GroupList {
     let mut groups = GroupList::new();
 
-    for (group, name, human_readable, value_type) in Settings::get_items() {
+    for (group, name, human_readable, value_type, help) in Settings::get_items() {
         let i = match groups.index_from_name(group.clone()) {
             Some(t) => t,
             None => {
@@ -119,7 +126,7 @@ pub fn get_groups() -> GroupList {
 
         groups[i]
             .items
-            .push(SettingsItem::new(name, human_readable, value_type));
+            .push(SettingsItem::new(name, human_readable, value_type, help));
     }
 
     groups

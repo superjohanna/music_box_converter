@@ -9,7 +9,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::music_box_config::config_groups::GroupListTrait;
+use crate::{music_box_config::config_groups::GroupListTrait, ShortAsRef};
 
 // Internal
 use super::MusicBoxConfig;
@@ -47,6 +47,42 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         chunks_sub_sub[0],
     );
 
+    // Tip
+    let tip = match app.settings_value_type_arr[app.settings_index].0 {
+        super::config_groups::ValueType::None => {
+            Line::from(vec![
+                Span::from("Tip: ").bold(),
+                Span::from("This is a group. Editing it does nothing. It's only here for organization."),
+                ])
+        },
+        super::config_groups::ValueType::Number => {
+            
+            Line::from(vec![
+                Span::from("Tip: ").bold(),
+                Span::from("This is a floating point number. It can be an integer or two integers seperated by a period (50 and 50.0 are the same)."),
+                ])
+        },
+        super::config_groups::ValueType::Colour => {
+            Line::from(vec![
+                Span::from("Tip: ").bold(),
+                Span::from("This is a colour. You can use hex notation (#ffffff for white) or rgb notation (rgb(255, 255, 255) for white) or any other svg supported format."),
+            ])
+        },
+    };
+
+    let help = if !app.settings_value_type_arr[app.settings_index].1.is_empty() {
+        Line::from(vec![
+            Span::from("Help: ").bold(),
+            Span::from(app.settings_value_type_arr[app.settings_index].1.clone()),
+        ])
+    } else {
+        Line::from("")
+    };
+
+    let tip_and_help = Paragraph::new(vec![tip, Line::from(""), help]);
+
+    f.render_widget(tip_and_help.wrap(Wrap { trim: false }), chunks_sub_sub[1]);
+
     // Navbar
     f.render_widget(
         navbar().block(block.clone().borders(Borders::TOP)),
@@ -62,14 +98,13 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         )));
         for item in group.items {
             list.push(ListItem::new(Line::from(
-                Span::raw(item.human_readable_name.clone()).fg(Color::White),
+                Span::raw(item.human_readable_name.clone()),
             )))
         }
     }
 
     let list = List::new(list)
         .block(block.clone().title("Settings"))
-        //.highlight_style(Style::default().underlined())
         .highlight_symbol(">>");
 
     f.render_stateful_widget(list, chunks_sub[0], &mut app.list_state);
@@ -86,6 +121,48 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             Line::from("The value you inputted is not a valid float."),
             Line::from("An Example of a valid float would be any integer ('50') or a two integers seperated by a period ('50.1')."),
             Line::from("Enter to continue..."),
+        ]).block(block).wrap(Wrap { trim: false });
+
+        let area_sub = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Min(1), Constraint::Max(1)])
+            .split(area);
+        f.render_widget(Clear, area);
+        f.render_widget(pop_text, area);
+    }
+
+    // Save error popup
+    if app.save_error.is_some() {
+        let error =  app.save_error.as_ref().unwrap().to_string();
+        let block = Block::default()
+            .title("Error")
+            .borders(Borders::ALL)
+            .title_alignment(Alignment::Center);
+        let area = centered_rect(60, 20, f.size());
+        let pop_text = Paragraph::new(vec![
+            Line::from(format!("Couldn't save file to '{}'", app.output_path)),
+            Line::from(error),
+        ]).block(block).wrap(Wrap { trim: false });
+
+        let area_sub = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Min(1), Constraint::Max(1)])
+            .split(area);
+        f.render_widget(Clear, area);
+        f.render_widget(pop_text, area);
+    }
+
+    // Open error popup
+    if app.open_error.is_some() {
+        let error =  app.open_error.as_ref().unwrap().to_string();
+        let block = Block::default()
+            .title("Error")
+            .borders(Borders::ALL)
+            .title_alignment(Alignment::Center);
+        let area = centered_rect(60, 20, f.size());
+        let pop_text = Paragraph::new(vec![
+            Line::from(format!("Couldn't open file '{}'", app.output_path)),
+            Line::from(error),
         ]).block(block).wrap(Wrap { trim: false });
 
         let area_sub = Layout::default()
@@ -156,10 +233,20 @@ fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]
         ])
         .split(chunks_main[1]);
 
-    let chunks_sub_sub = Layout::default()
+    let mut chunks_sub_sub = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Max(3), Constraint::Min(1)])
         .split(chunks_sub[1]);
+
+    // You may be asking what this is. Good question
+    // Basically we want to make a little space to the left of chunks_sub_sub[1] but Rc<[Rect]> doesn't implement DerefMut so we create a new one
+    let chunks_sub_sub = Rc::new([
+        chunks_sub_sub[0],
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Max(1), Constraint::Min(1)])
+            .split(chunks_sub_sub[1])[1],
+    ]);
 
     (chunks_main, chunks_sub, chunks_sub_sub)
 }
@@ -176,7 +263,7 @@ fn editor(app: &MusicBoxConfig) -> Paragraph<'_> {
 fn navbar() -> Paragraph<'static> {
     Paragraph::new(vec![
         Line::from("^S Save | ^O Open | ^X eXit"),
-        Line::from("^L delete Line | "),
+        Line::from("^L delete Line | ^E move up | ^D move down"),
     ])
     .alignment(Alignment::Center)
 }

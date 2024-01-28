@@ -88,42 +88,18 @@ impl MusicBoxConvert {
 
     /// Deserializes ./box.json and assigns the MusicBox with the name given via arguments to the self.music_box.
     fn choose_music_box(&mut self) -> Result<()> {
-        let file = match File::open("boxes.json") {
+        let file = match File::open(self.args.get_one::<String>("io_box").unwrap()) {
             Ok(t) => t,
             Err(e) => return Err(Error::IOError(Box::new(e))),
         };
 
-        let deserialized: Vec<MusicBox> = match serde_json::from_reader(BufReader::new(file)) {
+        let deserialized: MusicBox = match serde_json::from_reader(BufReader::new(file)) {
             Ok(t) => t,
             Err(e) => return Err(Error::SerdeJsonError(Box::new(e))),
         };
 
-        let chosen_box: &String = match self.args.get_one("box") {
-            // We provided a default value for this argument so if this is None something has seriously gone wrong
-            None => {
-                return Err(Error::Generic(
-                    "music_box_converter/functions.rs Line 27".to_string(),
-                ))
-            }
-            Some(t) => t,
-        };
-
-        for m in deserialized {
-            if m.name != *chosen_box {
-                continue;
-            }
-            info!("Selected music box: {}", m.name);
-            self.music_box = Some(m);
-            return Ok(());
-        }
-
-        Err(Error::Generic(
-            format!(
-                "Music box '{0}' not found. Check spelling and boxes.json file.",
-                *chosen_box
-            )
-            .to_string(),
-        ))
+        self.music_box = Some(deserialized);
+        Ok(())
     }
 
     /// Deserializes ./svg_settings.json and assigns the deserialized SvgSettings to self.svg_settings.
@@ -213,7 +189,9 @@ impl MusicBoxConvert {
         let mut overflow = u64::MIN;
 
         for event in self.track.clone().unwrap().iter() {
-            if (event.abs - first_note_pos + overflow) as f64 * self.scale.res()?.x > self.settings.res()?.paper_size_x {
+            if (event.abs - first_note_pos + overflow) as f64 * self.scale.res()?.x
+                > self.settings.res()?.paper_size_x
+            {
                 self.draw_page(pages.last().unwrap(), overflow);
                 overflow = event.abs - pages.last().unwrap().last().unwrap().abs;
                 pages.push(Vec::<Event>::new());
@@ -446,4 +424,3 @@ impl MusicBoxConvert {
         Ok(docs)
     }
 }
-

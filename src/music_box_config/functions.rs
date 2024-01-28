@@ -33,7 +33,11 @@ impl MusicBoxConfig {
         let mut terminal = Terminal::new(CrosstermBackend::new(stdout())).to_res()?;
         terminal.clear().to_res()?;
 
-        self.settings = Some(Settings::default());
+        if let Err(e) = self.open() {
+            self.open_error = Some(Box::new(e));
+            self.open_file = None;
+            self.popup = true;
+        }
         self.main_loop(&mut terminal);
 
         stdout().execute(LeaveAlternateScreen).to_res()?;
@@ -57,7 +61,20 @@ impl MusicBoxConfig {
                     }
                     if key.modifiers == KeyModifiers::CONTROL {
                         match key.code {
-                            KeyCode::Char('x') => break,
+                            KeyCode::Char('x') => {
+                                if !self.popup {
+                                    break;
+                                }
+                                self.save_file = None;
+                                self.open_file = None;
+                                self.parse_error = false;
+                                if self.open_error.is_some() {
+                                    self.settings = Some(Settings::default());
+                                }
+                                self.open_error = None;
+                                self.save_error = None;
+                                self.popup = false;
+                            }
                             KeyCode::Char('l') => {
                                 if self.popup {
                                     continue;
@@ -77,6 +94,22 @@ impl MusicBoxConfig {
                                 }
                                 self.open_file = Some(self.output_path.clone());
                                 self.popup = true;
+                            }
+                            KeyCode::Char('e') => {
+                                if self.settings_index != 0 {
+                                    if self.update_settings_index(true).is_err() {
+                                        continue;
+                                    }
+                                    self.settings_index -= 1;
+                                }
+                            }
+                            KeyCode::Char('d') => {
+                                if self.settings_index != self.settings_arr_length {
+                                    if self.update_settings_index(false).is_err() {
+                                        continue;
+                                    }
+                                    self.settings_index += 1;
+                                }
                             }
                             _ => (),
                         }
@@ -141,17 +174,30 @@ impl MusicBoxConfig {
                                 if self.parse_error {
                                     self.parse_error = false;
                                 }
+                                if self.save_error.is_some() {
+                                    self.save_error = None;
+                                }
+                                if self.open_error.is_some() {
+                                    self.settings = Some(Settings::default());
+                                    self.open_error = None;
+                                }
                                 if let Some(t) = &self.save_file {
                                     self.output_path = t.clone();
                                     self.save_current_setting();
-                                    self.save();
-                                    self.save_file = None;
+                                    if let Err(e) = self.save() {
+                                        self.save_error = Some(Box::new(e));
+                                        self.save_file = None;
+                                        continue;
+                                    };
                                 }
                                 if let Some(t) = &self.open_file {
                                     self.output_path = t.clone();
-                                    self.open();
+                                    if let Err(e) = self.open() {
+                                        self.open_error = Some(Box::new(e));
+                                        self.open_file = None;
+                                        continue;
+                                    };
                                     self.load_current_setting();
-                                    self.open_file = None;
                                 }
                                 self.popup = false;
                             }
@@ -175,6 +221,11 @@ impl MusicBoxConfig {
                                 self.parse_error = false;
                                 self.save_file = None;
                                 self.open_file = None;
+                                if self.open_error.is_some() {
+                                    self.settings = Some(Settings::default());
+                                }
+                                self.open_error = None;
+                                self.save_error = None;
                                 self.popup = false;
                             }
                             _ => continue,
@@ -186,19 +237,24 @@ impl MusicBoxConfig {
         Ok(())
     }
 
+    /// For updating the settings_index in a direction. Loads stuff into the input_buffer for example.
     fn update_settings_index(&mut self, negative: bool) -> Result<()> {
+        // Check if popup
+        if self.popup {
+            return Err(Error::Generic("Popup".to_string()));
+        }
         // Load next value
         let (prev_value_type, prev_index) = (
-            self.settings_index_value_type[self.settings_index],
+            self.settings_value_type_arr[self.settings_index].0,
             self.settings_index,
         );
         let (next_value_type, next_index) = match negative {
             true => (
-                self.settings_index_value_type[self.settings_index - 1],
+                self.settings_value_type_arr[self.settings_index - 1].0,
                 prev_index - 1,
             ),
             false => (
-                self.settings_index_value_type[self.settings_index + 1],
+                self.settings_value_type_arr[self.settings_index + 1].0,
                 prev_index + 1,
             ),
         };
@@ -233,9 +289,10 @@ impl MusicBoxConfig {
         Ok(())
     }
 
+    /// Reduced update_settings_index
     fn save_current_setting(&mut self) -> Result<()> {
         let (prev_value_type, prev_index) = (
-            self.settings_index_value_type[self.settings_index],
+            self.settings_value_type_arr[self.settings_index].0,
             self.settings_index,
         );
 
@@ -262,8 +319,9 @@ impl MusicBoxConfig {
         Ok(())
     }
 
+    /// Reduced update_settings_index
     fn load_current_setting(&mut self) -> Result<()> {
-        let next_value_type = self.settings_index_value_type[self.settings_index];
+        let next_value_type = self.settings_value_type_arr[self.settings_index].0;
         let next_op = self.settings.res()?.get(self.settings_index);
 
         if let Some(t) = next_op {
@@ -273,7 +331,7 @@ impl MusicBoxConfig {
         Ok(())
     }
 
-    /// Deserializes ./svg_settings.json and assigns the deserialized SvgSettings to self.svg_settings.
+    /// Opens a file with the path provided by self.open_file and deserializes it to self.settings.
     fn open(&mut self) -> Result<()> {
         let path_string = self.open_file.clone().unwrap();
         let abs_path = match crate::path::absolute_path(path_string) {
@@ -292,19 +350,27 @@ impl MusicBoxConfig {
         };
 
         self.settings = Some(deserialized);
+
+        self.open_file = None;
+
         Ok(())
     }
 
-    fn save(&self) -> Result<()> {
+    /// Saves a file to the path provided by self.save_file and serializes self.settings to it.
+    fn save(&mut self) -> Result<()> {
         let mut path_string = self.output_path.clone();
         let mut abs_path = match crate::path::absolute_path(path_string) {
             Ok(t) => t,
             Err(e) => return Err(Error::IOError(Box::new(e))),
         };
 
-        match std::fs::create_dir_all(abs_path.clone()) {
-            Ok(t) => t,
-            Err(e) => (), /*return Err(Error::IOError(Box::new(e)))*/
+        let parent = abs_path.parent();
+
+        if let Some(t) = parent {
+            match std::fs::create_dir_all(t) {
+                Ok(t) => t,
+                Err(e) => (), /*return Err(Error::IOError(Box::new(e)))*/
+            }
         }
 
         let mut file = std::fs::File::create(abs_path).to_res()?;
@@ -315,6 +381,8 @@ impl MusicBoxConfig {
         };
 
         file.write_all(j.as_bytes());
+
+        self.save_file = None;
 
         Ok(())
     }
