@@ -10,6 +10,7 @@
             "name": "Debug convert",
             "program": "${workspaceFolder}/target/debug/${workspaceFolderBasename}",
             "args": [
+                "convert",
                 "-i",
                 "meg_wiwauf_laminat1ohneakk.mid",
                 "-o",

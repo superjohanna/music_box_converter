@@ -16,7 +16,10 @@ impl<T> FromError<T> for Result<T> {
     fn from_io(res: std::io::Result<T>) -> Result<T> {
         match res {
             Ok(t) => Ok(t),
-            Err(e) => Err(Error::IOError(Box::new(e))),
+            Err(e) => Err(Error::IOError(
+                Box::new(e),
+                Box::new("This io error was converted".to_string()),
+            )),
         }
     }
 

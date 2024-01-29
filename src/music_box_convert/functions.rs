@@ -1,7 +1,7 @@
 // std
 use std::{
     fs::{self, File},
-    io::{BufReader, Read},
+    io::{BufReader, Read, Write},
 };
 
 // simplelog
@@ -90,7 +90,12 @@ impl MusicBoxConvert {
     fn choose_music_box(&mut self) -> Result<()> {
         let file = match File::open(self.args.get_one::<String>("io_box").unwrap()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => {
+                return Err(Error::IOError(
+                    Box::new(e),
+                    Box::new(self.args.get_one::<String>("io_box").unwrap().to_string()),
+                ))
+            }
         };
 
         let deserialized: MusicBox = match serde_json::from_reader(BufReader::new(file)) {
@@ -106,7 +111,12 @@ impl MusicBoxConvert {
     fn load_settings(&mut self) -> Result<()> {
         let file = match File::open(self.args.get_one::<String>("io_settings").unwrap()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => {
+                return Err(Error::IOError(
+                    Box::new(e),
+                    Box::new(self.args.get_one::<String>("io_settings").unwrap().clone()),
+                ))
+            }
         };
 
         let deserialized: Settings = match serde_json::from_reader(BufReader::new(file)) {
@@ -118,7 +128,7 @@ impl MusicBoxConvert {
         Ok(())
     }
 
-    /// Stores an absolute representation of the midi data in self.absolute_track
+    /// Stores an absolute representation of the midi data in self.absolute_track. Also output a midi file if requested.
     fn get_abs(&mut self) -> Result<()> {
         let mut input = self.args.get_one::<String>("io_in").unwrap().to_owned();
         let track_number = self.args.get_one::<usize>("track").unwrap().to_owned();
@@ -128,9 +138,9 @@ impl MusicBoxConvert {
             input.remove(0);
         }
 
-        let mut file: Vec<u8> = match std::fs::read(input) {
+        let mut file: Vec<u8> = match std::fs::read(input.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(input))),
         };
 
         let smf: Smf = match Smf::parse(&file) {
@@ -158,6 +168,36 @@ impl MusicBoxConvert {
                 track_number
             )));
         }
+
+        let op = self.args.get_one::<String>("io_out_midi");
+        if let Some(t) = op {
+            // output midi
+            let mut abs_path = match crate::path::absolute_path(t) {
+                Ok(t) => t,
+                Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
+            };
+
+            let parent = abs_path.parent();
+
+            if let Some(t) = parent {
+                match std::fs::create_dir_all(t) {
+                    Ok(t) => t,
+                    Err(e) => (), /*return Err(Error::IOError(Box::new(e)))*/
+                }
+            }
+
+            let mut file = match File::create(abs_path) {
+                Ok(t) => t,
+                Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
+            };
+
+            let track = self.track.res()?.to_midi_track();
+            let mut midi = smf.clone();
+            let mut buf = Vec::<u8>::new();
+            midi.tracks.push(track);
+            midi.write(&mut buf);
+            file.write_all(&buf);
+        };
 
         Ok(())
     }
@@ -394,14 +434,14 @@ impl MusicBoxConvert {
     /// Writes the documents to a file
     fn write_documents(&self) -> Result<()> {
         let mut path_string = self.args.get_one::<String>("io_out").unwrap().to_owned();
-        let mut abs_path = match crate::path::absolute_path(path_string) {
+        let mut abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         };
 
         match std::fs::create_dir_all(abs_path.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         }
 
         for (i, svg) in self.svg.iter().enumerate() {

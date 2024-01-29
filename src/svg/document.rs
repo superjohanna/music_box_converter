@@ -57,12 +57,22 @@ impl Document {
     pub fn save(&self, path: &std::path::Path) -> Result<()> {
         let mut file = match File::create(path) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => {
+                return Err(Error::IOError(
+                    Box::new(e),
+                    Box::new(path.to_string_lossy().to_string()),
+                ))
+            }
         };
 
         match file.write_all(self.print().as_bytes()) {
             Ok(t) => (),
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => {
+                return Err(Error::IOError(
+                    Box::new(e),
+                    Box::new(path.to_string_lossy().to_string()),
+                ))
+            }
         }
 
         Ok(())

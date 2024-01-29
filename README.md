@@ -61,6 +61,7 @@ There are the following options:
   - -T, --track \<TRACK_NUMBER>&emsp;&emsp;
   Specifies which track from the midi file to use. Zero-based.  
   [default: 0]
+  - -O, --midi-out &emsp; &emsp; &emsp; &emsp; &emsp;&emsp;&emsp;&emsp;When set outputs a midi file with transposed notes.
   - -t, --transpose &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp;
   Wether to transpose notes that can't normally be played.
   - -v, --verbose... &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp;

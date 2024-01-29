@@ -3,8 +3,9 @@ use super::Track;
 use crate::music::{event::Event, music_box::MusicBox, note::Note};
 use crate::prelude::*;
 
+use midly::num::{u28, u4, u7};
 // midly
-use midly::{MetaMessage, MidiMessage, Track as MidiTrack};
+use midly::{MetaMessage, MidiMessage, Track as MidiTrack, TrackEvent};
 
 impl Track {
     pub fn from_midi_track(track: MidiTrack, music_box: &MusicBox, transpose: &bool) -> Self {
@@ -98,6 +99,28 @@ impl Track {
         }
 
         output.tick_length = current_time;
+        output
+    }
+
+    pub fn to_midi_track(&self) -> MidiTrack {
+        let mut output = MidiTrack::default();
+
+        let mut prev_abs = 0;
+        for event in self.inner.clone() {
+            let te = TrackEvent {
+                delta: u28::from((event.abs - prev_abs) as u32),
+                kind: midly::TrackEventKind::Midi {
+                    channel: u4::from(0),
+                    message: MidiMessage::NoteOn {
+                        key: event.note.to_midi_pitch(),
+                        vel: u7::from(127),
+                    },
+                },
+            };
+
+            output.push(te);
+        }
+
         output
     }
 

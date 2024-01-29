@@ -24,7 +24,7 @@ pub fn get_args() -> Command {
                         .long("output")
                         .help("The output directory to output to.")
                         .num_args(1)
-                        .value_name("FILE")
+                        .value_name("DIRECTORY")
                         .required(true),
                 )
                 .arg(
@@ -41,6 +41,15 @@ pub fn get_args() -> Command {
                     Arg::new("io_box")
                         .help("Specifies which box file to use.")
                         .default_value("./box.json")
+                        .num_args(1)
+                        .value_name("FILE")
+                        .required(false),
+                )
+                .arg(
+                    Arg::new("io_out_midi")
+                        .short('O')
+                        .long("midi-out")
+                        .help("When set outputs a midi file with transposed notes.")
                         .num_args(1)
                         .value_name("FILE")
                         .required(false),

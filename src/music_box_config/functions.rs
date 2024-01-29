@@ -334,14 +334,14 @@ impl MusicBoxConfig {
     /// Opens a file with the path provided by self.open_file and deserializes it to self.settings.
     fn open(&mut self) -> Result<()> {
         let path_string = self.open_file.clone().unwrap();
-        let abs_path = match crate::path::absolute_path(path_string) {
+        let abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         };
 
         let file = match File::open(abs_path) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         };
 
         let deserialized: Settings = match serde_json::from_reader(BufReader::new(file)) {
@@ -359,9 +359,9 @@ impl MusicBoxConfig {
     /// Saves a file to the path provided by self.save_file and serializes self.settings to it.
     fn save(&mut self) -> Result<()> {
         let mut path_string = self.output_path.clone();
-        let mut abs_path = match crate::path::absolute_path(path_string) {
+        let mut abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         };
 
         let parent = abs_path.parent();

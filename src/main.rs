@@ -25,7 +25,10 @@ fn main() -> Result<()> {
         Some(("config", sub_m)) => music_box_config(sub_m),
         _ => match get_args().print_help() {
             Ok(t) => Ok(t),
-            Err(e) => Err(Error::IOError(Box::new(e))),
+            Err(e) => Err(Error::IOError(
+                Box::new(e),
+                Box::new("Error printing help".to_string()),
+            )),
         },
     };
 
