@@ -5,7 +5,7 @@
 
 This is a command-line program that converts MIDI files to scores that can be printed for any music box.
 
-If you are unsure of how to create a MIDI file for this program to consume, I recoomend [Musescore](https://musescore.org/), which is a free and open source music notation program that has a MIDI export function.
+If you are unsure of how to create a MIDI file for this program to consume, I recommend [Musescore](https://musescore.org/), which is a free and open source music notation program that has a MIDI export function.
 
 ## Building
 
