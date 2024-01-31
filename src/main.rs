@@ -1,6 +1,6 @@
 #![allow(unused)]
 // Modules
-pub mod arguments;
+pub mod command;
 pub mod error;
 pub mod music;
 pub mod music_box_config;
@@ -8,22 +8,22 @@ pub mod music_box_convert;
 pub mod path;
 pub mod prelude;
 pub mod settings;
-pub mod svg;
+pub mod svg_writer;
 pub mod vec2;
 
 use music_box_config::MusicBoxConfig;
 
 // Internal
-use crate::arguments::get_args;
+use crate::command::get_command;
 use crate::music_box_convert::MusicBoxConvert;
 use crate::prelude::*;
 
 fn main() -> Result<()> {
-    let args = get_args().get_matches();
+    let args = get_command().get_matches();
     let result = match args.subcommand() {
         Some(("convert", sub_m)) => music_box_convert(sub_m),
         Some(("config", sub_m)) => music_box_config(sub_m),
-        _ => match get_args().print_help() {
+        _ => match get_command().print_help() {
             Ok(t) => Ok(t),
             Err(e) => Err(Error::IOError(
                 Box::new(e),
@@ -81,7 +81,7 @@ mod tests {
             "-qt",
         ];
 
-        let command = crate::arguments::get_args();
+        let command = crate::command::get_command();
         let res = run(command.get_matches_from(args));
 
         assert_eq!(
@@ -277,5 +277,4 @@ mod tests {
 </svg>"##.to_string()
         );
     }
-    
 }

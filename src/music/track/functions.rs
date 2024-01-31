@@ -5,16 +5,27 @@ use crate::prelude::*;
 
 use midly::num::{u28, u4, u7};
 // midly
-use midly::{MetaMessage, MidiMessage, Track as MidiTrack, TrackEvent};
+use midly::{MetaMessage, MidiMessage, Timing, Track as MidiTrack, TrackEvent};
 
 impl Track {
-    pub fn from_midi_track(track: MidiTrack, music_box: &MusicBox, transpose: &bool) -> Self {
+    /// Converts a `MidiTrack` into a `Track`. Removes unplayable notes by the passed `MusicBox` and transposes them by octaves if `transpose` is set
+    pub fn from_midi_track(
+        track: MidiTrack,
+        music_box: &MusicBox,
+        transpose: &bool,
+        timing: Timing,
+    ) -> Self {
         let mut output = Self {
             inner: Vec::<Event>::new(),
             tick_length: u64::MIN,
             min_distance: u64::MAX,
             max_distance: u64::MIN,
+            timing,
         };
+        panic!("Need to include Timings here");
+
+        debug!("Timing: {:?}", timing);
+
         info!(
             "Transposing {}",
             if *transpose { "enabled" } else { "disabled" }
@@ -24,14 +35,17 @@ impl Track {
         // Array used for calculating the min and max distance
         // 127 is the number of midi pitches there are
         let mut last_seen = [Option::None; 127];
+        // The outer loop over all `TrackEvents`
         'i: for event in track {
             current_time += u64::from(u32::from(event.delta));
 
+            // Get the pitch and velocity of the event or continue if something else
             let (mut pitch, vel) = match event.kind {
                 midly::TrackEventKind::Midi {
                     message: MidiMessage::NoteOn { key, vel },
                     ..
                 } => (key, vel),
+                // Some midi program send velocity 0 NoteOn events instead of NoteOff events. Just use that here to differentiate between NoteOff and NoteOn
                 midly::TrackEventKind::Midi {
                     message: MidiMessage::NoteOff { key, .. },
                     ..
@@ -39,35 +53,44 @@ impl Track {
                 _ => continue,
             };
 
-            if !transpose {
-                // Not transpose. Just check if it's playable
-                if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
-                    // Not playable
-                    warn!(
-                        "Note '{0}' at '{current_time}' with velocity '{vel}' not playable with music box. Skipping.",
-                        Note::from_midi_pitch(pitch),
-                    );
-                    continue;
-                }
-            } else if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
-                // Transpose and unplayable note
-                let note = Note::from_midi_pitch(pitch);
-                let note_octave = note.get_octave();
-                // This should cover the whole midi pitch spectrum. My converted notes go far beyond this so it doesn't matter if the notes have negative hz or are over 20khz
-                'j: for i in -1..=9 {
-                    if !music_box.is_valid_note(&note.transpose(i)) {
+            let note = Note::from_midi_pitch(pitch);
+
+            if !music_box.is_valid_note(&note) {
+                // Note can't be played
+                match transpose {
+                    // No transpose
+                    false => {
+                        warn!(
+                            "Note '{0}' at '{current_time}' with velocity '{vel}' not playable with music box. Skipping.",
+                            Note::from_midi_pitch(pitch),
+                        );
                         continue;
                     }
-                    info!("Transposing note '{note}' at '{current_time}' with velocity '{vel}' from octave '{note_octave}' to '{i}'");
-                    pitch = note.transpose(i).to_midi_pitch();
-                    continue 'i;
+
+                    // Transpose
+                    true => {
+                        let note_octave = note.get_octave();
+                        let mut transposable = false;
+                        // This should cover the whole midi pitch spectrum. My converted notes go far beyond this so it doesn't matter if the notes have negative hz or are over 20khz
+                        for transpose_octave in -1..=9 {
+                            if !music_box.is_valid_note(&note.transpose(transpose_octave)) {
+                                continue;
+                            }
+                            // Could transpose.
+                            info!("Transposing note '{note}' at '{current_time}' with velocity '{vel}' from octave '{note_octave}' to '{transpose_octave}'");
+                            pitch = note.transpose(transpose_octave).to_midi_pitch();
+                            break;
+                        }
+                        if !transposable {
+                            // Couldn't transpose. Continue to next event
+                            warn!(
+                                "Note '{0}' at '{current_time}' with velocity '{vel}' not playable with music box even when transposing. Skipping.",
+                                Note::from_midi_pitch(pitch),
+                            );
+                            continue;
+                        }
+                    }
                 }
-                // Couldn't transpose
-                warn!(
-                    "Note '{0}' at '{current_time}' with velocity '{vel}' not playable with music box even when transposing. Skipping.",
-                    Note::from_midi_pitch(pitch),
-                );
-                continue;
             }
 
             info!(
@@ -75,6 +98,7 @@ impl Track {
                 Note::from_midi_pitch(pitch)
             );
 
+            // Distance calculation. If NoteOff or Note hasn't been seen before then ignore
             if vel != 0 && last_seen[pitch.as_int() as usize].is_some() {
                 let distance = current_time - last_seen[pitch.as_int() as usize].unwrap();
                 if distance != 0 {
@@ -88,10 +112,12 @@ impl Track {
                 }
             }
 
+            // Saving that a note has been encountered. If it isn't a NoteOff that is
             if vel != 0 {
                 last_seen[u8::from(pitch) as usize] = Some(current_time);
             }
 
+            // Add to track
             output.inner.push(Event::new(
                 Note::from_midi_pitch(pitch),
                 current_time,
@@ -99,18 +125,17 @@ impl Track {
             ))
         }
 
+        // This is the total length in MidiTicks
         output.tick_length = current_time;
         output
     }
 
+    /// Converts a `Track` into a `MidiTrack`. Copies the Midi meta events from the passed track.
     pub fn to_midi_track<'a>(&self, track: MidiTrack<'a>) -> MidiTrack<'a> {
-        /* let filtered: Vec<TrackEvent<'_>> = track
-        .clone()
-        .into_iter()
-        .filter(|t| matches!(t.kind, midly::TrackEventKind::Meta(..)))
-        .collect(); */
-
+        // Create new track
         let mut output = MidiTrack::default();
+
+        // Name it
         output.push(TrackEvent {
             delta: u28::from(0),
             kind: midly::TrackEventKind::Meta(midly::MetaMessage::TrackName(
@@ -151,9 +176,10 @@ impl Track {
             Some(t) => output.push(*t),
         }
 
+        // Convert from absolute to delta and push it onto the track
         let mut prev_abs = 0;
         for event in self.inner.clone() {
-            let te = TrackEvent {
+            output.push(TrackEvent {
                 delta: u28::from((event.abs - prev_abs) as u32),
                 kind: midly::TrackEventKind::Midi {
                     channel: u4::from(0),
@@ -162,11 +188,11 @@ impl Track {
                         vel: u7::from(event.vel),
                     },
                 },
-            };
-            output.push(te);
+            });
             prev_abs = event.abs;
         }
 
+        // Add an EndOfTrack Message
         output.push(TrackEvent {
             delta: u28::from(0),
             kind: midly::TrackEventKind::Meta(MetaMessage::EndOfTrack),
@@ -175,16 +201,23 @@ impl Track {
         output
     }
 
+    /// The length in MidiTicks
     pub fn tick_length(&self) -> u64 {
         self.tick_length
     }
 
+    /// The minimum distance between two notes of the same key.
     pub fn min_distance(&self) -> u64 {
         self.min_distance
     }
 
+    /// The maximum distance between two notes of the same key.
     pub fn max_distance(&self) -> u64 {
         self.max_distance
+    }
+
+    pub fn timing(&self) -> u64 {
+        self.timing
     }
 }
 
