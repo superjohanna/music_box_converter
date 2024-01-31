@@ -23,8 +23,8 @@ impl Track {
         let mut current_time = 0u64;
         // Array used for calculating the min and max distance
         // 127 is the number of midi pitches there are
-        let mut last_seen: [Option<u64>; 127] = [Option::None; 127];
-        for event in track {
+        let mut last_seen = [Option::None; 127];
+        'i: for event in track {
             current_time += u64::from(u32::from(event.delta));
 
             let (mut pitch, vel) = match event.kind {
@@ -32,22 +32,19 @@ impl Track {
                     message: MidiMessage::NoteOn { key, vel },
                     ..
                 } => (key, vel),
+                midly::TrackEventKind::Midi {
+                    message: MidiMessage::NoteOff { key, .. },
+                    ..
+                } => (key, u7::from(0)),
                 _ => continue,
             };
-
-            // Musescore doesn't write a NoteOff event but instead writes a NoteOn Event with zero velocity
-            // We need to check for that...
-            // Why? This took soooo long to figure out. Why not use NoteOff if the have it?? Ahhh!
-            if vel == 0 {
-                continue;
-            }
 
             if !transpose {
                 // Not transpose. Just check if it's playable
                 if !music_box.is_valid_note(&Note::from_midi_pitch(pitch)) {
                     // Not playable
-                    info!(
-                        "Note '{0}' at '{current_time}' not playable with music box . Skipping.",
+                    warn!(
+                        "Note '{0}' at '{current_time}' with velocity '{vel}' not playable with music box. Skipping.",
                         Note::from_midi_pitch(pitch),
                     );
                     continue;
@@ -57,28 +54,28 @@ impl Track {
                 let note = Note::from_midi_pitch(pitch);
                 let note_octave = note.get_octave();
                 // This should cover the whole midi pitch spectrum. My converted notes go far beyond this so it doesn't matter if the notes have negative hz or are over 20khz
-                for i in -1..=9 {
+                'j: for i in -1..=9 {
                     if !music_box.is_valid_note(&note.transpose(i)) {
                         continue;
                     }
-                    info!("Transposing note from octave '{note_octave}' to '{i}'");
+                    info!("Transposing note '{note}' at '{current_time}' with velocity '{vel}' from octave '{note_octave}' to '{i}'");
                     pitch = note.transpose(i).to_midi_pitch();
-                    break;
+                    continue 'i;
                 }
                 // Couldn't transpose
-                info!(
-                    "Note '{0}' at '{current_time}' not playable with music box. Skipping.",
+                warn!(
+                    "Note '{0}' at '{current_time}' with velocity '{vel}' not playable with music box even when transposing. Skipping.",
                     Note::from_midi_pitch(pitch),
                 );
                 continue;
             }
 
             info!(
-                "Found note '{}' at '{current_time}'.",
+                "Found note '{}' at '{current_time}' with velocity '{vel}'.",
                 Note::from_midi_pitch(pitch)
             );
 
-            if last_seen[pitch.as_int() as usize].is_some() {
+            if vel != 0 && last_seen[pitch.as_int() as usize].is_some() {
                 let distance = current_time - last_seen[pitch.as_int() as usize].unwrap();
                 if distance != 0 {
                     output.min_distance = std::cmp::min(distance, output.min_distance);
@@ -91,19 +88,68 @@ impl Track {
                 }
             }
 
-            last_seen[u8::from(pitch) as usize] = Some(current_time);
+            if vel != 0 {
+                last_seen[u8::from(pitch) as usize] = Some(current_time);
+            }
 
-            output
-                .inner
-                .push(Event::new(Note::from_midi_pitch(pitch), current_time))
+            output.inner.push(Event::new(
+                Note::from_midi_pitch(pitch),
+                current_time,
+                vel.as_int(),
+            ))
         }
 
         output.tick_length = current_time;
         output
     }
 
-    pub fn to_midi_track(&self) -> MidiTrack {
+    pub fn to_midi_track<'a>(&self, track: MidiTrack<'a>) -> MidiTrack<'a> {
+        /* let filtered: Vec<TrackEvent<'_>> = track
+        .clone()
+        .into_iter()
+        .filter(|t| matches!(t.kind, midly::TrackEventKind::Meta(..)))
+        .collect(); */
+
         let mut output = MidiTrack::default();
+        output.push(TrackEvent {
+            delta: u28::from(0),
+            kind: midly::TrackEventKind::Meta(midly::MetaMessage::TrackName(
+                "music_box_converter".as_bytes(),
+            )),
+        });
+
+        // Copy the time signature if there is one
+        match track.iter().find(|t| {
+            matches!(
+                t.kind,
+                midly::TrackEventKind::Meta(midly::MetaMessage::TimeSignature(..))
+            )
+        }) {
+            None => (),
+            Some(t) => output.push(*t),
+        }
+
+        // Copy the key signature if there is one
+        match track.iter().find(|t| {
+            matches!(
+                t.kind,
+                midly::TrackEventKind::Meta(midly::MetaMessage::KeySignature(..))
+            )
+        }) {
+            None => (),
+            Some(t) => output.push(*t),
+        }
+
+        // Copy the Tempo if there is one
+        match track.iter().find(|t| {
+            matches!(
+                t.kind,
+                midly::TrackEventKind::Meta(midly::MetaMessage::Tempo(..))
+            )
+        }) {
+            None => (),
+            Some(t) => output.push(*t),
+        }
 
         let mut prev_abs = 0;
         for event in self.inner.clone() {
@@ -113,13 +159,18 @@ impl Track {
                     channel: u4::from(0),
                     message: MidiMessage::NoteOn {
                         key: event.note.to_midi_pitch(),
-                        vel: u7::from(127),
+                        vel: u7::from(event.vel),
                     },
                 },
             };
-
             output.push(te);
+            prev_abs = event.abs;
         }
+
+        output.push(TrackEvent {
+            delta: u28::from(0),
+            kind: midly::TrackEventKind::Meta(MetaMessage::EndOfTrack),
+        });
 
         output
     }

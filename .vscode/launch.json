@@ -12,9 +12,11 @@
             "args": [
                 "convert",
                 "-i",
-                "meg_wiwauf_laminat1ohneakk.mid",
+                "meg_wiwauf_laminat1.mid",
                 "-o",
                 "./out/",
+                "-O",
+                "./transposed.mid",
                 "-vvvt",
             ],
             "cwd": "${workspaceFolder}",

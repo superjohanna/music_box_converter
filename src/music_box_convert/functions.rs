@@ -191,7 +191,7 @@ impl MusicBoxConvert {
                 Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
             };
 
-            let track = self.track.res()?.to_midi_track();
+            let track = self.track.res()?.to_midi_track(smf.tracks[0].clone());
             let mut midi = smf.clone();
             let mut buf = Vec::<u8>::new();
             midi.tracks.push(track);
@@ -229,6 +229,9 @@ impl MusicBoxConvert {
         let mut overflow = u64::MIN;
 
         for event in self.track.clone().unwrap().iter() {
+            if event.vel == 0 {
+                continue;
+            }
             if (event.abs - first_note_pos + overflow) as f64 * self.scale.res()?.x
                 > self.settings.res()?.paper_size_x
             {

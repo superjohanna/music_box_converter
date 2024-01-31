@@ -49,7 +49,7 @@ pub fn get_args() -> Command {
                     Arg::new("io_out_midi")
                         .short('O')
                         .long("midi-out")
-                        .help("When set outputs a midi file with transposed notes.")
+                        .help("When set outputs a midi file with transposed notes on one track and the original track.")
                         .num_args(1)
                         .value_name("FILE")
                         .required(false),

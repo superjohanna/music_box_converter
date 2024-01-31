@@ -8,4 +8,6 @@ pub struct Event {
     pub note: Note,
     /// The absolute time of the <code>Event</code>
     pub abs: u64,
+    /// The velocity of the Event
+    pub vel: u8,
 }
