@@ -9,16 +9,16 @@ type Settings = crate::settings::Settings;
 // This is a prefix for items that belong to a group
 const SUB_PREFIX: &str = "\u{2022}"; // • https://www.compart.com/en/unicode/U+2022
 
-/// Just a ```Vec<SettingsGroup>```
+/// Just a `Vec<SettingsGroup>`
 pub type GroupList = Vec<SettingsGroup>;
 
-/// A trait to implement Indexing for ```GroupList```
+/// A trait to implement Indexing for `GroupList`
 pub trait GroupListTrait {
-    /// Finds the index from a name. Returns ```None``` if the item is not found.
+    /// Finds the index from a name. Returns`None` if the item is not found.
     fn index_from_name(&self, name: String) -> Option<usize>;
     /// Finds the length of the longest human readable name of the items
     fn max_length(&self) -> Option<usize>;
-    /// Returns a ```Vec<bool>```, which contains as many members as there are groups and items,
+    /// Returns a `Vec<bool>`, which contains as many members as there are groups and items,
     /// and which denote if the item with this index is a group or an item
     fn get_list_value_type_and_help(&self) -> Vec<(ValueType, String)>;
 }

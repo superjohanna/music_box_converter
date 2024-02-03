@@ -4,6 +4,7 @@ pub mod functions;
 // serde_derive
 use serde_derive::Deserialize;
 
+/// My note representation. i8 is the octave of the note
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 pub enum Note {
     C(i8),

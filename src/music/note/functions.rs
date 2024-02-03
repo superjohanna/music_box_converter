@@ -5,8 +5,9 @@ use midly::{num::u7, MidiMessage};
 use super::Note;
 
 impl Note {
-    pub fn from_midi_pitch(p: midly::num::u7) -> Self {
-        let pitch = p.as_int();
+    /// Returns a `Note` from a midi pitch.
+    pub fn from_midi_pitch(pitch: midly::num::u7) -> Self {
+        let pitch = pitch.as_int();
         let octave = ((pitch - 12) / 12) as i8;
         match pitch % 12 {
             0 => Note::C(octave),
@@ -25,6 +26,7 @@ impl Note {
         }
     }
 
+    /// Returns a midi pitch from a `Note`
     pub fn to_midi_pitch(&self) -> midly::num::u7 {
         match self {
             Note::C(octave) => u7::from_int_lossy(((octave * 12) + 12) as u8),
@@ -42,8 +44,8 @@ impl Note {
         }
     }
 
+    /// Transposes a `Note` to a given octave
     pub fn transpose(&self, octave: i8) -> Self {
-        let current_octave = self.get_octave().to_owned();
         match self {
             Note::C(_) => Note::C(octave),
             Note::CS(_) => Note::CS(octave),
@@ -60,6 +62,7 @@ impl Note {
         }
     }
 
+    /// Returns a reference to an octave from a `Note`
     pub fn get_octave(&self) -> &i8 {
         match self {
             Note::C(octave) => octave,

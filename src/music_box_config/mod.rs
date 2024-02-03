@@ -2,6 +2,7 @@ pub mod config_groups;
 pub mod config_macro;
 pub mod functions;
 pub mod ui;
+pub mod command;
 
 use std::{default, error::Error, io::Stdout};
 
@@ -28,7 +29,7 @@ pub struct MusicBoxConfig {
     terminal: Option<Terminal<CrosstermBackend<Stdout>>>,
     /// The current state of our settings. This is what gets serialized and what is deserialized when loading a file to.
     settings: Option<Settings>,
-    /// A ```Vec<SettingsGroup>``` which holds all the fields in their respective groups. Set from [crate::settings] via macros.
+    /// A `Vec<SettingsGroup>` which holds all the fields in their respective groups. Set from [crate::settings] via macros.
     groups: GroupList,
     /// The current state of the item one is editing. This gets put into the respective field of the self.settings.
     input_buf: String,
@@ -40,11 +41,11 @@ pub struct MusicBoxConfig {
     settings_arr_length: usize,
     /// The state of the list. This is somehow supposed to allow scrolling? I get to it once I implement scrolling.
     list_state: ListState,
-    /// This is a ```Vec<ValueType>``` which is just a representation of the "flattened" settings list.  
+    /// This is a `Vec<ValueType>` which is just a representation of the "flattened" settings list.  
     settings_value_type_arr: Vec<(ValueType, String)>,
     /// Indicates wether we have a popup open
     popup: bool,
-    /// Indicates wether we had an error while parsing ```Self::input_buf```
+    /// Indicates wether we had an error while parsing `Self::input_buf`
     parse_error: bool,
     /// Indicates wether we had an error while saving
     save_error: Option<Box<dyn Error>>,
