@@ -16,7 +16,6 @@ pub struct Track {
     tick_length: u64,
     min_distance: u64,
     max_distance: u64,
-    timing: Timing,
 }
 
 impl Track {

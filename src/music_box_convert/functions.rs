@@ -46,10 +46,7 @@ impl MusicBoxConvert {
         self.initiate_logger()?;
         self.load_music_box()?;
         self.load_settings()?;
-        if let Some(path) = self.args.get_one::<String>("io_out_midi") {
-            Self::output_intermediate(path, self.track.res()?.clone())?;
-        }
-
+        self.get_abs()?;
         self.set_scale_factor()?;
         self.generate_svgs()?;
         self.output_documents()
@@ -164,7 +161,6 @@ impl MusicBoxConvert {
             smf.tracks[track_number].clone(),
             self.music_box.res()?,
             &transpose,
-            smf.header.timing
         ));
 
         if self.track.res()?.len() < 2 {
@@ -174,35 +170,37 @@ impl MusicBoxConvert {
             )));
         }
 
-        Ok(())
-    }
-
-    fn output_intermediate(path: &String, track: Track) -> Result<()> {
-        let mut abs_path = match crate::path::absolute_path(path) {
-            Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path.clone()))),
-        };
-
-        let parent = abs_path.parent();
-
-        if let Some(t) = parent {
-            match std::fs::create_dir_all(t) {
+        if let Some(t) = self.args.get_one::<String>("io_out_midi") {
+            let mut abs_path = match crate::path::absolute_path(t) {
                 Ok(t) => t,
-                Err(e) => (), /*return Err(Error::IOError(Box::new(e)))*/
+                Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
+            };
+
+            let parent = abs_path.parent();
+
+            if let Some(t) = parent {
+                match std::fs::create_dir_all(t) {
+                    Ok(t) => t,
+                    Err(e) => (), /*return Err(Error::IOError(Box::new(e)))*/
+                }
             }
+
+            let mut file = match File::create(abs_path) {
+                Ok(t) => t,
+                Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
+            };
+
+            let track = self
+                .track
+                .clone()
+                .unwrap()
+                .to_midi_track(smf.tracks[0].clone());
+            let mut midi = smf.clone();
+            let mut buf = Vec::<u8>::new();
+            midi.tracks.push(track);
+            midi.write(&mut buf);
+            file.write_all(&buf);
         }
-
-        let mut file = match File::create(abs_path) {
-            Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path.clone()))),
-        };
-
-        /* let track = track.to_midi_track(smf.tracks[0].clone());
-        let mut midi = smf.clone();
-        let mut buf = Vec::<u8>::new();
-        midi.tracks.push(track);
-        midi.write(&mut buf);
-        file.write_all(&buf); */
 
         Ok(())
     }

@@ -9,22 +9,13 @@ use midly::{MetaMessage, MidiMessage, Timing, Track as MidiTrack, TrackEvent};
 
 impl Track {
     /// Converts a `MidiTrack` into a `Track`. Removes unplayable notes by the passed `MusicBox` and transposes them by octaves if `transpose` is set
-    pub fn from_midi_track(
-        track: MidiTrack,
-        music_box: &MusicBox,
-        transpose: &bool,
-        timing: Timing,
-    ) -> Self {
+    pub fn from_midi_track(track: MidiTrack, music_box: &MusicBox, transpose: &bool) -> Self {
         let mut output = Self {
             inner: Vec::<Event>::new(),
             tick_length: u64::MIN,
             min_distance: u64::MAX,
             max_distance: u64::MIN,
-            timing,
         };
-        panic!("Need to include Timings here");
-
-        debug!("Timing: {:?}", timing);
 
         info!(
             "Transposing {}",
@@ -214,10 +205,6 @@ impl Track {
     /// The maximum distance between two notes of the same key.
     pub fn max_distance(&self) -> u64 {
         self.max_distance
-    }
-
-    pub fn timing(&self) -> u64 {
-        self.timing
     }
 }
 

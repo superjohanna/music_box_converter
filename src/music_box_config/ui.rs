@@ -218,6 +218,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]>) {
     let chunks_main = Layout::default()
         .direction(Direction::Vertical)
