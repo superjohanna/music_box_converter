@@ -9,25 +9,22 @@ use ratatui::{
     Frame,
 };
 
-use crate::{music_box_config::config_groups::GroupListTrait, ShortAsRef};
+use self::value::ValueType;
 
 // Internal
 use super::MusicBoxConfig;
+use super::item_list::*;
 
 pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Update liststate
     app.list_state.select(Some(app.index));
 
     // Set the maximum length which is used for the key input.
-    app.max_index = app.groups.len() - 1;
-    app.groups
-        .iter()
-        .for_each(|x| app.max_index += x.items.len());
+    app.max_index = app.settings_item_list.len() - 1;
 
     // Chunks
     let (terminal_chunks, mid_section_chunks, mid_right_chunks) =
-        // max_char_length = length of the largest item. This panics if there are no settings. Unwrap is okay.
-        get_chunks(f.size(), app.groups.max_length().unwrap());
+        get_chunks(f.size(), app.settings_item_list.longest_human_readable_name_length);
 
     // Block
     let block = Block::default()
@@ -50,10 +47,10 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Tip
     let tip = get_tip(app);
 
-    let help = if !app.settings_value_type_arr[app.index].1.is_empty() {
+    let help = if !app.settings_item_list[app.index].help.is_empty() {
         Line::from(vec![
             Span::from("Help: ").bold(),
-            Span::from(app.settings_value_type_arr[app.index].1.clone()),
+            Span::from(app.settings_item_list[app.index].help.clone()),
         ])
     } else {
         Line::from("")
@@ -72,14 +69,11 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Settings
     let mut list = Vec::<ListItem>::new();
 
-    for group in app.groups.clone() {
-        list.push(ListItem::new(Line::from(
-            Span::raw(group.name.clone()).bold(),
-        )));
-        for item in group.items {
-            list.push(ListItem::new(Line::from(
-                Span::raw(item.human_readable_name.clone()),
-            )))
+    for item in app.settings_item_list.iter() {
+        if let ValueType::None = item.value_type {
+            list.push(ListItem::new(item.human_name.clone()).bold())
+        } else {
+            list.push(ListItem::new(item.human_name.clone()));
         }
     }
 
@@ -199,27 +193,27 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 }
 
 fn get_tip(app: &MusicBoxConfig) -> Line<'_> {
-    match app.settings_value_type_arr[app.index].0 {
-        super::config_groups::ValueType::None => {
+    match app.settings_item_list[app.index].value_type {
+        ValueType::None => {
             Line::from(vec![
                 Span::from("Tip: ").bold(),
                 Span::from("This is a group. Editing it does nothing. It's only here for organization."),
                 ])
         },
-        super::config_groups::ValueType::Number => {
+        ValueType::Number => {
         
             Line::from(vec![
                 Span::from("Tip: ").bold(),
                 Span::from("This is a floating point number. It can be an integer or two integers seperated by a period (50 and 50.0 are the same)."),
                 ])
         },
-        super::config_groups::ValueType::Colour => {
+        ValueType::Colour => {
             Line::from(vec![
                 Span::from("Tip: ").bold(),
                 Span::from("This is a colour. You can use hex notation (#ffffff for white) or rgb notation (rgb(255, 255, 255) for white) or any other svg supported format."),
             ])
         },
-        super::config_groups::ValueType::Boolean => {
+        ValueType::Boolean => {
             Line::from(vec![
                 Span::from("Tip: ").bold(),
                 Span::from("This is a checkbox. You can toggle it on or off with the spacebar."),
@@ -238,8 +232,8 @@ fn get_chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[R
     let chunks_sub = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            // Plus two for the borders.
-            Constraint::Max(max_char_length as u16 + 2u16),
+            // Plus two for the borders and two extra for the list selection symbol '>>'
+            Constraint::Max(max_char_length as u16 + 4u16),
             Constraint::Min(1),
         ])
         .split(chunks_main[1]);
@@ -268,9 +262,16 @@ fn get_title() -> Paragraph<'static> {
 }
 
 fn get_editor(app: &MusicBoxConfig) -> Paragraph<'_> {
-    match app.settings_value_type_arr[app.index].0 {
-        
-        _ => Paragraph::new(Text::styled(&app.input_buf, Style::default()))
+    match app.settings_item_list[app.index].value_type {
+        ValueType::Boolean => {
+            // The windows console can't render the unicode characters I wanted to use ;(
+            if &app.input_buf == "false" {
+                Paragraph::new(Text::styled("Off", Style::default()))
+            } else {
+                Paragraph::new(Text::styled("On", Style::default()))
+            }
+        },
+        _ => Paragraph::new(Text::styled(&app.input_buf, Style::default())),
     }
 }
 

@@ -4,8 +4,8 @@ use serde_derive::{Deserialize, Serialize};
 // Internal
 use crate::config_macro_add_item;
 use crate::config_macro_list_items;
-use crate::music_box_config::config_groups::ValueType;
-use crate::music_box_config::config_groups::ValueWrapper;
+use crate::music_box_config::item_list::value::ValueType;
+use crate::music_box_config::item_list::value::ValueWrapper;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Settings {
@@ -31,6 +31,7 @@ pub struct Settings {
     pub paper_size_y: f64,
 
     // Sprocket holes
+    pub sprocket_hole_enable: bool,
     pub sprocket_hole_distance: f64,
 }
 
@@ -55,7 +56,8 @@ impl Settings {
             14 => self.paper_size_x = val.self_to_f64().unwrap(),
             15 => self.paper_size_y = val.self_to_f64().unwrap(),
             // Sprocket holes
-            17 => self.sprocket_hole_distance = val.self_to_f64().unwrap(),
+            17 => self.sprocket_hole_enable = val.self_to_bool().unwrap(),
+            18 => self.sprocket_hole_distance = val.self_to_f64().unwrap(),
             _ => (),
         }
     }
@@ -86,7 +88,8 @@ impl Settings {
             14 => Some(ValueWrapper::from_f64(self.paper_size_x)),
             15 => Some(ValueWrapper::from_f64(self.paper_size_y)),
             // Sprocket holes
-            17 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance)),
+            17 => Some(ValueWrapper::from_bool(self.sprocket_hole_enable)),
+            18 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance)),
             _ => None,
         }
     }
@@ -104,6 +107,7 @@ impl Settings {
         staff_bounding_box_left_right_colour,
         paper_size_x,
         paper_size_y,
+        sprocket_hole_enable,
         sprocket_hole_distance,
     );
 
@@ -210,6 +214,11 @@ impl Settings {
     config_macro_add_item!(
         self,
         "Sprocket holes";
+        sprocket_hole_enable,
+        "Sprocket holes enable",
+        ValueType::Boolean,
+        bool,
+        HELP_SPROCKET_ENABLE;
         sprocket_hole_distance,
         "Sprocket hole distance (mm)",
         ValueType::Number,
@@ -253,4 +262,6 @@ const HELP_PAPER_LENGTH: &str = r#"This is the length of the paper. If the lengt
 const HELP_PAPER_HEIGHT: &str = r#"This setting is currently unused."#;
 
 // Sprocket holes
+const HELP_SPROCKET_ENABLE: &str = r#"This enables or disables the sprocket holes."#;
+
 const HELP_SPROCKET_HOLE_DISTANCE: &str = r#"This is the distance of the centres of two sprocket holes. In the example file they are also red, but they are one the edges in fixed distances."#;

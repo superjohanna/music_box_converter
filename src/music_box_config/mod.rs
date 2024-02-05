@@ -1,7 +1,7 @@
 pub mod command;
-pub mod config_groups;
 pub mod config_macro;
 pub mod functions;
+pub mod item_list;
 pub mod ui;
 
 use std::{default, error::Error, io::Stdout};
@@ -17,9 +17,8 @@ use ratatui::{
 };
 
 // Internal
+use self::item_list::settings_item_list::SettingsItemList;
 use crate::settings::Settings;
-
-use self::config_groups::{get_groups, GroupList, GroupListTrait, ValueType};
 
 #[derive(Debug, Default)]
 pub struct MusicBoxConfig {
@@ -29,8 +28,6 @@ pub struct MusicBoxConfig {
     terminal: Option<Terminal<CrosstermBackend<Stdout>>>,
     /// The current state of our settings. This is what gets serialized and what is deserialized when loading a file to.
     settings: Option<Settings>,
-    /// A `Vec<SettingsGroup>` which holds all the fields in their respective groups. Set from [crate::settings] via macros.
-    groups: GroupList,
     /// The current state of the item one is editing. This gets put into the respective field of the self.settings.
     input_buf: String,
     /// The stored output path / input path. This will be the file that was passed by arguments or the file that was previously saved.
@@ -41,8 +38,8 @@ pub struct MusicBoxConfig {
     max_index: usize,
     /// The state of the list. This is somehow supposed to allow scrolling? I get to it once I implement scrolling.
     list_state: ListState,
-    /// This is a `Vec<ValueType>` which is just a representation of the "flattened" settings list.  
-    settings_value_type_arr: Vec<(ValueType, String)>,
+    /// This is a representation of the settings.
+    settings_item_list: SettingsItemList,
     /// Indicates wether we have a popup open
     popup: bool,
     /// Indicates wether we had an error while parsing `Self::input_buf`
@@ -59,12 +56,11 @@ pub struct MusicBoxConfig {
 
 impl MusicBoxConfig {
     pub fn new(args: &ArgMatches) -> Self {
-        let groups = get_groups();
+        let list = SettingsItemList::get_items();
         let path = args.get_one::<String>("io_settings").unwrap().clone();
         Self {
             args: args.clone(),
-            groups: groups.clone(),
-            settings_value_type_arr: groups.get_list_value_type_and_help(),
+            settings_item_list: SettingsItemList::get_items(),
             input_buf: "Group. Not editable.".to_string(),
             list_state: ListState::default().with_selected(Some(0usize)),
             path_buf: path.clone(),

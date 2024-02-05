@@ -21,7 +21,7 @@ use serde::{Serialize, Serializer};
 
 // Internal
 use super::{
-    config_groups::{ValueType, ValueWrapper},
+    item_list::value::{ValueType, ValueWrapper},
     ui::ui,
     MusicBoxConfig,
 };
@@ -120,6 +120,18 @@ impl MusicBoxConfig {
                                 if self.popup {
                                     continue;
                                 }
+                                if self.settings_item_list[self.index].value_type
+                                    == ValueType::Boolean
+                                {
+                                    if c == ' ' {
+                                        if &self.input_buf == "true" {
+                                            self.input_buf = "false".to_string()
+                                        } else {
+                                            self.input_buf = "true".to_string()
+                                        }
+                                    }
+                                    continue;
+                                }
                                 if let Some(t) = &mut self.save_file {
                                     t.push(c);
                                 } else if let Some(t) = &mut self.open_file {
@@ -145,7 +157,19 @@ impl MusicBoxConfig {
                     } else if key.modifiers == KeyModifiers::NONE {
                         match key.code {
                             KeyCode::Char(c) => {
-                                if self.parse_error {
+                                if self.popup {
+                                    continue;
+                                }
+                                if self.settings_item_list[self.index].value_type
+                                    == ValueType::Boolean
+                                {
+                                    if c == ' ' {
+                                        if &self.input_buf == "true" {
+                                            self.input_buf = "false".to_string()
+                                        } else {
+                                            self.input_buf = "true".to_string()
+                                        }
+                                    }
                                     continue;
                                 }
                                 if let Some(t) = &mut self.save_file {
@@ -246,42 +270,44 @@ impl MusicBoxConfig {
         }
         // Load next value
         let (prev_value_type, prev_index) =
-            (self.settings_value_type_arr[self.index].0, self.index);
+            (self.settings_item_list[self.index].value_type, self.index);
         let (next_value_type, next_index) = match negative {
             true => (
-                self.settings_value_type_arr[self.index - 1].0,
+                self.settings_item_list[self.index - 1].value_type,
                 prev_index - 1,
             ),
             false => (
-                self.settings_value_type_arr[self.index + 1].0,
+                self.settings_item_list[self.index + 1].value_type,
                 prev_index + 1,
             ),
         };
 
-        let prev_op: Option<ValueWrapper> = match prev_value_type {
+        let prev_wrapper: Option<ValueWrapper> = match prev_value_type {
             ValueType::None => None,
             ValueType::Colour => Some(ValueWrapper::String(self.input_buf.clone())),
-            ValueType::Number => {
-                let res = self.input_buf.parse();
-                match res {
-                    Ok(t) => Some(ValueWrapper::F64(t)),
-                    Err(_) => {
-                        self.parse_error = true;
-                        self.popup = true;
-                        return Err(Error::Generic("Couldn't parse".to_string()));
-                    }
+            ValueType::Number => match self.input_buf.parse() {
+                Ok(t) => Some(ValueWrapper::F64(t)),
+                Err(_) => {
+                    self.parse_error = true;
+                    self.popup = true;
+                    return Err(Error::Generic("Couldn't parse".to_string()));
                 }
-            }
-            ValueType::Boolean => Option::None,
+            },
+            ValueType::Boolean => match self.input_buf.parse() {
+                Ok(t) => Some(ValueWrapper::Boolean(t)),
+                Err(_) => {
+                    panic!("buffer wasn't true or false");
+                }
+            },
         };
 
-        if let Some(t) = prev_op {
+        if let Some(t) = prev_wrapper {
             self.settings.res_mut()?.set(prev_index, &t);
         }
 
-        let next_op = self.settings.res()?.get(next_index);
+        let next_wrapper = self.settings.res()?.get(next_index);
 
-        if let Some(t) = next_op {
+        if let Some(t) = next_wrapper {
             self.input_buf = t.to_string();
             return Ok(());
         }
@@ -291,26 +317,28 @@ impl MusicBoxConfig {
 
     /// Reduced update_settings_index
     fn save_current_setting(&mut self) -> Result<()> {
-        let (value_type, index) = (self.settings_value_type_arr[self.index].0, self.index);
+        let (value_type, index) = (self.settings_item_list[self.index].value_type, self.index);
 
-        let option: Option<ValueWrapper> = match value_type {
+        let wrapper: Option<ValueWrapper> = match value_type {
             ValueType::None => None,
             ValueType::Colour => Some(ValueWrapper::String(self.input_buf.clone())),
-            ValueType::Number => {
-                let res = self.input_buf.parse();
-                match res {
-                    Ok(t) => Some(ValueWrapper::F64(t)),
-                    Err(_) => {
-                        self.parse_error = true;
-                        self.popup = true;
-                        return Err(Error::Generic("Couldn't parse".to_string()));
-                    }
+            ValueType::Number => match self.input_buf.parse() {
+                Ok(t) => Some(ValueWrapper::F64(t)),
+                Err(_) => {
+                    self.parse_error = true;
+                    self.popup = true;
+                    return Err(Error::Generic("Couldn't parse".to_string()));
                 }
-            }
-            ValueType::Boolean => Option::None,
+            },
+            ValueType::Boolean => match self.input_buf.parse() {
+                Ok(t) => Some(ValueWrapper::Boolean(t)),
+                Err(_) => {
+                    panic!("buffer wasn't true or false");
+                }
+            },
         };
 
-        if let Some(t) = option {
+        if let Some(t) = wrapper {
             self.settings.res_mut()?.set(index, &t);
         }
 
@@ -319,10 +347,10 @@ impl MusicBoxConfig {
 
     /// Reduced update_settings_index
     fn load_current_setting(&mut self) -> Result<()> {
-        let next_value_type = self.settings_value_type_arr[self.index].0;
-        let next_op = self.settings.res()?.get(self.index);
+        let value_type = self.settings_item_list[self.index].value_type;
+        let wrapper = self.settings.res()?.get(self.index);
 
-        if let Some(t) = next_op {
+        if let Some(t) = wrapper {
             self.input_buf = t.to_string();
             return Ok(());
         }
