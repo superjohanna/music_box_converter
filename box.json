@@ -1,6 +1,6 @@
     {
         "strip_height_mm": 58.19,
-        "min_note_distance_mm": 4,
+        "min_note_distance_mm": 6.65,
         "notes": [
             {
                 "FS": 3
