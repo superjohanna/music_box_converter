@@ -28,6 +28,9 @@ pub struct Settings {
     // Paper sizes
     pub paper_size_x: f64,
     pub paper_size_y: f64,
+
+    // Sprocket holes
+    pub sprocket_hole_distance: f64,
 }
 
 impl Settings {
@@ -50,6 +53,8 @@ impl Settings {
             // Paper sizes
             14 => self.paper_size_x = val.c_to_f64().unwrap(),
             15 => self.paper_size_y = val.c_to_f64().unwrap(),
+            // Sprocket holes
+            17 => self.sprocket_hole_distance = val.c_to_f64().unwrap(),
             _ => (),
         }
     }
@@ -79,6 +84,8 @@ impl Settings {
             // Paper sizes
             14 => Some(StringOrF64::from_f64(self.paper_size_x)),
             15 => Some(StringOrF64::from_f64(self.paper_size_y)),
+            // Sprocket holes
+            17 => Some(StringOrF64::from_f64(self.sprocket_hole_distance)),
             _ => None,
         }
     }
@@ -96,6 +103,7 @@ impl Settings {
         staff_bounding_box_left_right_colour,
         paper_size_x,
         paper_size_y,
+        sprocket_hole_distance,
     );
 
     // To add a new group with new items
@@ -115,7 +123,7 @@ impl Settings {
     //Holes
     config_macro_add_item!(
         self,
-        "Holes",
+        "Holes";
         hole_radius_mm,
         "Hole radius (mm)",
         ValueType::Number,
@@ -131,7 +139,7 @@ impl Settings {
     // Staff general
     config_macro_add_item!(
         self,
-        "Staff general",
+        "Staff general";
         staff_offset_mm,
         "Staff offset (mm)",
         ValueType::Number,
@@ -142,7 +150,7 @@ impl Settings {
     // Staff Lines
     config_macro_add_item!(
         self,
-        "Staff Lines",
+        "Staff Lines";
         staff_line_thickness_mm,
         "Staff line thickness (mm)",
         ValueType::Number,
@@ -158,7 +166,7 @@ impl Settings {
     // Bounding Box
     config_macro_add_item!(
         self,
-        "Bounding box",
+        "Bounding box";
         staff_bounding_box_thickness_mm,
         "Staff bounding box thickness (mm)",
         ValueType::Number,
@@ -184,7 +192,7 @@ impl Settings {
     // Paper size
     config_macro_add_item!(
         self,
-        "Paper size",
+        "Paper size";
         paper_size_x,
         "Paper length (mm)",
         ValueType::Number,
@@ -195,6 +203,17 @@ impl Settings {
         ValueType::Number,
         f64,
         HELP_PAPER_HEIGHT;
+    );
+
+    // Sprocket holes
+    config_macro_add_item!(
+        self,
+        "Sprocket holes";
+        sprocket_hole_distance,
+        "Sprocket hole distance (mm)",
+        ValueType::Number,
+        f64,
+        HELP_SPROCKET_HOLE_DISTANCE;
     );
 }
 
@@ -270,3 +289,6 @@ const HELP_BOUNDING_BOX_LEFT_RIGHT_COLOUR: &str = r#"This is the colour of the l
 const HELP_PAPER_LENGTH: &str = r#"This is the length of the paper. If the length of the next note exceeds the paper length it will start a new file."#;
 
 const HELP_PAPER_HEIGHT: &str = r#"This setting is currently unused."#;
+
+// Sprocket holes
+const HELP_SPROCKET_HOLE_DISTANCE: &str = r#"This is the distance of the centres of two sprocket holes. In the example file they are also red, but they are one the edges in fixed distances."#;

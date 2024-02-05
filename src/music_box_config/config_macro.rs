@@ -22,7 +22,7 @@ macro_rules! config_macro_list_items {
 /// This needs to be called with all items you want to add to a group
 /// See settings.rs
 macro_rules! config_macro_add_item {
-    ($self:ident, $group:literal, $($item:ident, $item_string:literal, $value_type_enum:expr, $value_type:ident, $help:expr);+ $(;)?) => {
+    ($self:ident, $group:literal; $($item:ident, $item_string:literal, $value_type_enum:expr, $value_type:ident, $help:expr);+ $(;)?) => {
         $(
             paste::paste! {
                 fn [<get_ $item _name>] () -> (String, String, String, ValueType, String) {
