@@ -238,6 +238,7 @@ impl MusicBoxConfig {
                                         continue;
                                     }
                                     self.index -= 1;
+                                    continue;
                                 }
                             }
                             KeyCode::Down => {
@@ -246,6 +247,7 @@ impl MusicBoxConfig {
                                         continue;
                                     }
                                     self.index += 1;
+                                    continue;
                                 }
                             }
                             KeyCode::Esc => {
