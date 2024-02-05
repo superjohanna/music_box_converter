@@ -80,7 +80,13 @@ impl MusicBoxConfig {
                                 if self.popup {
                                     continue;
                                 }
-                                self.input_buf = String::new()
+                                if self.settings_item_list[self.index].value_type
+                                    == ValueType::Boolean
+                                {
+                                    self.input_buf = "false".to_string();
+                                    continue;
+                                }
+                                self.input_buf = String::new();
                             }
                             KeyCode::Char('s') => {
                                 if self.popup {
