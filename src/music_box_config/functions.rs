@@ -20,11 +20,12 @@ use ratatui::{
 use serde::{Serialize, Serializer};
 
 // Internal
-use super::{config_groups::ValueType, ui::ui, MusicBoxConfig};
-use crate::{
-    prelude::*,
-    settings::{Settings, ValueWrapper},
+use super::{
+    config_groups::{ValueType, ValueWrapper},
+    ui::ui,
+    MusicBoxConfig,
 };
+use crate::{prelude::*, settings::Settings};
 
 impl MusicBoxConfig {
     pub fn run(&mut self) -> Result<()> {
@@ -85,30 +86,30 @@ impl MusicBoxConfig {
                                 if self.popup {
                                     continue;
                                 }
-                                self.save_file = Some(self.output_path.clone());
+                                self.save_file = Some(self.path_buf.clone());
                                 self.popup = true;
                             }
                             KeyCode::Char('o') => {
                                 if self.popup {
                                     continue;
                                 }
-                                self.open_file = Some(self.output_path.clone());
+                                self.open_file = Some(self.path_buf.clone());
                                 self.popup = true;
                             }
                             KeyCode::Char('e') => {
-                                if self.settings_index != 0 {
+                                if self.index != 0 {
                                     if self.update_settings_index(true).is_err() {
                                         continue;
                                     }
-                                    self.settings_index -= 1;
+                                    self.index -= 1;
                                 }
                             }
                             KeyCode::Char('d') => {
-                                if self.settings_index != self.settings_arr_length {
+                                if self.index != self.max_index {
                                     if self.update_settings_index(false).is_err() {
                                         continue;
                                     }
-                                    self.settings_index += 1;
+                                    self.index += 1;
                                 }
                             }
                             _ => (),
@@ -182,7 +183,7 @@ impl MusicBoxConfig {
                                     self.open_error = None;
                                 }
                                 if let Some(t) = &self.save_file {
-                                    self.output_path = t.clone();
+                                    self.path_buf = t.clone();
                                     self.save_current_setting();
                                     if let Err(e) = self.save() {
                                         self.save_error = Some(Box::new(e));
@@ -191,7 +192,7 @@ impl MusicBoxConfig {
                                     };
                                 }
                                 if let Some(t) = &self.open_file {
-                                    self.output_path = t.clone();
+                                    self.path_buf = t.clone();
                                     if let Err(e) = self.open() {
                                         self.open_error = Some(Box::new(e));
                                         self.open_file = None;
@@ -202,19 +203,19 @@ impl MusicBoxConfig {
                                 self.popup = false;
                             }
                             KeyCode::Up => {
-                                if self.settings_index != 0 {
+                                if self.index != 0 {
                                     if self.update_settings_index(true).is_err() {
                                         continue;
                                     }
-                                    self.settings_index -= 1;
+                                    self.index -= 1;
                                 }
                             }
                             KeyCode::Down => {
-                                if self.settings_index != self.settings_arr_length {
+                                if self.index != self.max_index {
                                     if self.update_settings_index(false).is_err() {
                                         continue;
                                     }
-                                    self.settings_index += 1;
+                                    self.index += 1;
                                 }
                             }
                             KeyCode::Esc => {
@@ -244,17 +245,15 @@ impl MusicBoxConfig {
             return Err(Error::Generic("Popup".to_string()));
         }
         // Load next value
-        let (prev_value_type, prev_index) = (
-            self.settings_value_type_arr[self.settings_index].0,
-            self.settings_index,
-        );
+        let (prev_value_type, prev_index) =
+            (self.settings_value_type_arr[self.index].0, self.index);
         let (next_value_type, next_index) = match negative {
             true => (
-                self.settings_value_type_arr[self.settings_index - 1].0,
+                self.settings_value_type_arr[self.index - 1].0,
                 prev_index - 1,
             ),
             false => (
-                self.settings_value_type_arr[self.settings_index + 1].0,
+                self.settings_value_type_arr[self.index + 1].0,
                 prev_index + 1,
             ),
         };
@@ -292,10 +291,7 @@ impl MusicBoxConfig {
 
     /// Reduced update_settings_index
     fn save_current_setting(&mut self) -> Result<()> {
-        let (value_type, index) = (
-            self.settings_value_type_arr[self.settings_index].0,
-            self.settings_index,
-        );
+        let (value_type, index) = (self.settings_value_type_arr[self.index].0, self.index);
 
         let option: Option<ValueWrapper> = match value_type {
             ValueType::None => None,
@@ -323,8 +319,8 @@ impl MusicBoxConfig {
 
     /// Reduced update_settings_index
     fn load_current_setting(&mut self) -> Result<()> {
-        let next_value_type = self.settings_value_type_arr[self.settings_index].0;
-        let next_op = self.settings.res()?.get(self.settings_index);
+        let next_value_type = self.settings_value_type_arr[self.index].0;
+        let next_op = self.settings.res()?.get(self.index);
 
         if let Some(t) = next_op {
             self.input_buf = t.to_string();
@@ -360,7 +356,7 @@ impl MusicBoxConfig {
 
     /// Saves a file to the path provided by self.save_file and serializes self.settings to it.
     fn save(&mut self) -> Result<()> {
-        let mut path_string = self.output_path.clone();
+        let mut path_string = self.path_buf.clone();
         let mut abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
             Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),

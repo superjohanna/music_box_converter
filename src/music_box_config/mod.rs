@@ -1,8 +1,8 @@
+pub mod command;
 pub mod config_groups;
 pub mod config_macro;
 pub mod functions;
 pub mod ui;
-pub mod command;
 
 use std::{default, error::Error, io::Stdout};
 
@@ -34,11 +34,11 @@ pub struct MusicBoxConfig {
     /// The current state of the item one is editing. This gets put into the respective field of the self.settings.
     input_buf: String,
     /// The stored output path / input path. This will be the file that was passed by arguments or the file that was previously saved.
-    output_path: String,
+    path_buf: String,
     /// Index of the item that is currently being edited (The one with the '>>' before it).
-    settings_index: usize,
+    index: usize,
     /// The number of settings + groups there are. We need this to stop the user if they are at the bottom of the list and press down.
-    settings_arr_length: usize,
+    max_index: usize,
     /// The state of the list. This is somehow supposed to allow scrolling? I get to it once I implement scrolling.
     list_state: ListState,
     /// This is a `Vec<ValueType>` which is just a representation of the "flattened" settings list.  
@@ -67,7 +67,7 @@ impl MusicBoxConfig {
             settings_value_type_arr: groups.get_list_value_type_and_help(),
             input_buf: "Group. Not editable.".to_string(),
             list_state: ListState::default().with_selected(Some(0usize)),
-            output_path: path.clone(),
+            path_buf: path.clone(),
             open_file: Some(path),
             ..Default::default()
         }
