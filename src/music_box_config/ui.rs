@@ -68,6 +68,12 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
                 Span::from("This is a colour. You can use hex notation (#ffffff for white) or rgb notation (rgb(255, 255, 255) for white) or any other svg supported format."),
             ])
         },
+        super::config_groups::ValueType::Boolean => {
+            Line::from(vec![
+                Span::from("Tip: ").bold(),
+                Span::from("This is a checkbox. You can toggle it on or off with the spacebar."),
+            ])
+        },
     };
 
     let help = if !app.settings_value_type_arr[app.settings_index].1.is_empty() {
@@ -258,7 +264,10 @@ fn title() -> Paragraph<'static> {
 }
 
 fn editor(app: &MusicBoxConfig) -> Paragraph<'_> {
-    Paragraph::new(Text::styled(&app.input_buf, Style::default()))
+    match app.settings_value_type_arr[app.settings_index].0 {
+        
+        _ => Paragraph::new(Text::styled(&app.input_buf, Style::default()))
+    }
 }
 
 fn navbar() -> Paragraph<'static> {

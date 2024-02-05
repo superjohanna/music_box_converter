@@ -98,6 +98,8 @@ pub enum ValueType {
     Number,
     /// The value is a colour
     Colour,
+    /// The value is a bool
+    Boolean,
 }
 
 impl ValueType {

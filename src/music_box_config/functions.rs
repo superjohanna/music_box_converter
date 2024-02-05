@@ -23,7 +23,7 @@ use serde::{Serialize, Serializer};
 use super::{config_groups::ValueType, ui::ui, MusicBoxConfig};
 use crate::{
     prelude::*,
-    settings::{Settings, StringOrF64},
+    settings::{Settings, ValueWrapper},
 };
 
 impl MusicBoxConfig {
@@ -259,13 +259,13 @@ impl MusicBoxConfig {
             ),
         };
 
-        let prev_op: Option<StringOrF64> = match prev_value_type {
+        let prev_op: Option<ValueWrapper> = match prev_value_type {
             ValueType::None => None,
-            ValueType::Colour => Some(StringOrF64::String(self.input_buf.clone())),
+            ValueType::Colour => Some(ValueWrapper::String(self.input_buf.clone())),
             ValueType::Number => {
                 let res = self.input_buf.parse();
                 match res {
-                    Ok(t) => Some(StringOrF64::F64(t)),
+                    Ok(t) => Some(ValueWrapper::F64(t)),
                     Err(_) => {
                         self.parse_error = true;
                         self.popup = true;
@@ -273,6 +273,7 @@ impl MusicBoxConfig {
                     }
                 }
             }
+            ValueType::Boolean => Option::None,
         };
 
         if let Some(t) = prev_op {
@@ -291,18 +292,18 @@ impl MusicBoxConfig {
 
     /// Reduced update_settings_index
     fn save_current_setting(&mut self) -> Result<()> {
-        let (prev_value_type, prev_index) = (
+        let (value_type, index) = (
             self.settings_value_type_arr[self.settings_index].0,
             self.settings_index,
         );
 
-        let prev_op: Option<StringOrF64> = match prev_value_type {
+        let option: Option<ValueWrapper> = match value_type {
             ValueType::None => None,
-            ValueType::Colour => Some(StringOrF64::String(self.input_buf.clone())),
+            ValueType::Colour => Some(ValueWrapper::String(self.input_buf.clone())),
             ValueType::Number => {
                 let res = self.input_buf.parse();
                 match res {
-                    Ok(t) => Some(StringOrF64::F64(t)),
+                    Ok(t) => Some(ValueWrapper::F64(t)),
                     Err(_) => {
                         self.parse_error = true;
                         self.popup = true;
@@ -310,10 +311,11 @@ impl MusicBoxConfig {
                     }
                 }
             }
+            ValueType::Boolean => Option::None,
         };
 
-        if let Some(t) = prev_op {
-            self.settings.res_mut()?.set(prev_index, &t);
+        if let Some(t) = option {
+            self.settings.res_mut()?.set(index, &t);
         }
 
         Ok(())

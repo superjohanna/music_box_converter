@@ -35,57 +35,57 @@ pub struct Settings {
 
 impl Settings {
     // Sets a value given an index
-    pub fn set(&mut self, i: usize, val: &StringOrF64) {
+    pub fn set(&mut self, i: usize, val: &ValueWrapper) {
         match i {
             // Holes
-            1 => self.hole_radius_mm = val.c_to_f64().unwrap(),
-            2 => self.hole_colour = val.c_to_string().unwrap(),
+            1 => self.hole_radius_mm = val.self_to_f64().unwrap(),
+            2 => self.hole_colour = val.self_to_string().unwrap(),
             // Staff
-            4 => self.staff_offset_mm = val.c_to_f64().unwrap(),
+            4 => self.staff_offset_mm = val.self_to_f64().unwrap(),
             // Staff lines
-            6 => self.staff_line_thickness_mm = val.c_to_f64().unwrap(),
-            7 => self.staff_line_colour = val.c_to_string().unwrap(),
+            6 => self.staff_line_thickness_mm = val.self_to_f64().unwrap(),
+            7 => self.staff_line_colour = val.self_to_string().unwrap(),
             // Bounding box
-            9 => self.staff_bounding_box_thickness_mm = val.c_to_f64().unwrap(),
-            10 => self.staff_bounding_box_top_bottom_distance_mm = val.c_to_f64().unwrap(),
-            11 => self.staff_bounding_box_top_bottom_colour = val.c_to_string().unwrap(),
-            12 => self.staff_bounding_box_left_right_colour = val.c_to_string().unwrap(),
+            9 => self.staff_bounding_box_thickness_mm = val.self_to_f64().unwrap(),
+            10 => self.staff_bounding_box_top_bottom_distance_mm = val.self_to_f64().unwrap(),
+            11 => self.staff_bounding_box_top_bottom_colour = val.self_to_string().unwrap(),
+            12 => self.staff_bounding_box_left_right_colour = val.self_to_string().unwrap(),
             // Paper sizes
-            14 => self.paper_size_x = val.c_to_f64().unwrap(),
-            15 => self.paper_size_y = val.c_to_f64().unwrap(),
+            14 => self.paper_size_x = val.self_to_f64().unwrap(),
+            15 => self.paper_size_y = val.self_to_f64().unwrap(),
             // Sprocket holes
-            17 => self.sprocket_hole_distance = val.c_to_f64().unwrap(),
+            17 => self.sprocket_hole_distance = val.self_to_f64().unwrap(),
             _ => (),
         }
     }
 
     // Gets a value given an index
-    pub fn get(&self, i: usize) -> Option<StringOrF64> {
+    pub fn get(&self, i: usize) -> Option<ValueWrapper> {
         match i {
             // Holes
-            1 => Some(StringOrF64::from_f64(self.hole_radius_mm)),
-            2 => Some(StringOrF64::from_string(self.hole_colour.clone())),
+            1 => Some(ValueWrapper::from_f64(self.hole_radius_mm)),
+            2 => Some(ValueWrapper::from_string(self.hole_colour.clone())),
             // Staff
-            4 => Some(StringOrF64::from_f64(self.staff_offset_mm)),
+            4 => Some(ValueWrapper::from_f64(self.staff_offset_mm)),
             // Staff lines
-            6 => Some(StringOrF64::from_f64(self.staff_line_thickness_mm)),
-            7 => Some(StringOrF64::from_string(self.staff_line_colour.clone())),
+            6 => Some(ValueWrapper::from_f64(self.staff_line_thickness_mm)),
+            7 => Some(ValueWrapper::from_string(self.staff_line_colour.clone())),
             // Bounding box
-            9 => Some(StringOrF64::from_f64(self.staff_bounding_box_thickness_mm)),
-            10 => Some(StringOrF64::from_f64(
+            9 => Some(ValueWrapper::from_f64(self.staff_bounding_box_thickness_mm)),
+            10 => Some(ValueWrapper::from_f64(
                 self.staff_bounding_box_top_bottom_distance_mm,
             )),
-            11 => Some(StringOrF64::from_string(
+            11 => Some(ValueWrapper::from_string(
                 self.staff_bounding_box_top_bottom_colour.clone(),
             )),
-            12 => Some(StringOrF64::from_string(
+            12 => Some(ValueWrapper::from_string(
                 self.staff_bounding_box_left_right_colour.clone(),
             )),
             // Paper sizes
-            14 => Some(StringOrF64::from_f64(self.paper_size_x)),
-            15 => Some(StringOrF64::from_f64(self.paper_size_y)),
+            14 => Some(ValueWrapper::from_f64(self.paper_size_x)),
+            15 => Some(ValueWrapper::from_f64(self.paper_size_y)),
             // Sprocket holes
-            17 => Some(StringOrF64::from_f64(self.sprocket_hole_distance)),
+            17 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance)),
             _ => None,
         }
     }
@@ -218,40 +218,53 @@ impl Settings {
 }
 
 #[derive(Debug, Clone)]
-pub enum StringOrF64 {
+pub enum ValueWrapper {
     String(String),
     F64(f64),
+    Boolean(bool),
 }
 
-impl StringOrF64 {
-    pub fn c_to_string(&self) -> Option<String> {
+impl ValueWrapper {
+    pub fn self_to_string(&self) -> Option<String> {
         match self {
             Self::String(s) => Some(s.to_owned()),
             _ => None,
         }
     }
 
-    pub fn c_to_f64(&self) -> Option<f64> {
+    pub fn self_to_f64(&self) -> Option<f64> {
         match self {
             Self::F64(f) => Some(*f),
             _ => None,
         }
     }
 
-    pub fn from_string(s: String) -> StringOrF64 {
+    pub fn self_to_bool(&self) -> Option<bool> {
+        match self {
+            Self::Boolean(b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    pub fn from_string(s: String) -> ValueWrapper {
         Self::String(s)
     }
 
-    pub fn from_f64(f: f64) -> StringOrF64 {
+    pub fn from_f64(f: f64) -> ValueWrapper {
         Self::F64(f)
+    }
+
+    pub fn from_bool(b: bool) -> ValueWrapper {
+        Self::Boolean(b)
     }
 }
 
-impl ToString for StringOrF64 {
+impl ToString for ValueWrapper {
     fn to_string(&self) -> String {
         match self {
             Self::String(s) => s.to_owned(),
             Self::F64(f) => f.to_string(),
+            Self::Boolean(b) => b.to_string(),
         }
     }
 }
