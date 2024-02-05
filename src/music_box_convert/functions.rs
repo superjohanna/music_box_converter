@@ -277,6 +277,14 @@ impl MusicBoxConvert {
             );
         }
 
+        // Draw Sprocket holes
+        if self.settings.res()?.sprocket_hole_enable {
+            let page_size_x = self.settings.res()?.paper_size_x;
+            for i in 0..= (page_size_x / self.settings.res()?.sprocket_hole_distance).floor() as u64 {
+                document.append(Circle::new_builder());
+            }
+        }
+
         // Draw staff bounding box
         // Left
         document.append(
