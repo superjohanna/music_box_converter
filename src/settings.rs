@@ -9,9 +9,9 @@ use crate::music_box_config::item_list::value::ValueWrapper;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Settings {
-    // Holes
-    pub hole_radius_mm: f64,
-    pub hole_colour: String,
+    // Notes
+    pub note_hole_radius_mm: f64,
+    pub note_hole_colour: String,
 
     // Staff
     pub staff_offset_mm: f64,
@@ -34,15 +34,16 @@ pub struct Settings {
     pub sprocket_hole_enable: bool,
     pub sprocket_hole_distance_mm: f64,
     pub sprocket_hole_distance_staff_mm: f64,
+    pub sprocket_hole_colour: String,
 }
 
 impl Settings {
     // Sets a value given an index
     pub fn set(&mut self, i: usize, val: &ValueWrapper) {
         match i {
-            // Holes
-            1 => self.hole_radius_mm = val.self_to_f64().unwrap(),
-            2 => self.hole_colour = val.self_to_string().unwrap(),
+            // Notes
+            1 => self.note_hole_radius_mm = val.self_to_f64().unwrap(),
+            2 => self.note_hole_colour = val.self_to_string().unwrap(),
             // Staff
             4 => self.staff_offset_mm = val.self_to_f64().unwrap(),
             // Staff lines
@@ -60,6 +61,7 @@ impl Settings {
             17 => self.sprocket_hole_enable = val.self_to_bool().unwrap(),
             18 => self.sprocket_hole_distance_mm = val.self_to_f64().unwrap(),
             19 => self.sprocket_hole_distance_staff_mm = val.self_to_f64().unwrap(),
+            20 => self.sprocket_hole_colour = val.self_to_string().unwrap(),
             _ => (),
         }
     }
@@ -67,9 +69,9 @@ impl Settings {
     // Gets a value given an index
     pub fn get(&self, i: usize) -> Option<ValueWrapper> {
         match i {
-            // Holes
-            1 => Some(ValueWrapper::from_f64(self.hole_radius_mm)),
-            2 => Some(ValueWrapper::from_string(self.hole_colour.clone())),
+            // Notes
+            1 => Some(ValueWrapper::from_f64(self.note_hole_radius_mm)),
+            2 => Some(ValueWrapper::from_string(self.note_hole_colour.clone())),
             // Staff
             4 => Some(ValueWrapper::from_f64(self.staff_offset_mm)),
             // Staff lines
@@ -93,14 +95,15 @@ impl Settings {
             17 => Some(ValueWrapper::from_bool(self.sprocket_hole_enable)),
             18 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance_mm)),
             19 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance_staff_mm)),
+            20 => Some(ValueWrapper::from_string(self.sprocket_hole_colour.clone())),
             _ => None,
         }
     }
 
     config_macro_list_items!(
         Settings,
-        hole_radius_mm,
-        hole_colour,
+        note_hole_radius_mm,
+        note_hole_colour,
         staff_offset_mm,
         staff_line_thickness_mm,
         staff_line_colour,
@@ -113,6 +116,7 @@ impl Settings {
         sprocket_hole_enable,
         sprocket_hole_distance_mm,
         sprocket_hole_distance_staff_mm,
+        sprocket_hole_colour,
     );
 
     // To add a new group with new items
@@ -132,17 +136,17 @@ impl Settings {
     //Holes
     config_macro_add_item!(
         self,
-        "Holes";
-        hole_radius_mm,
-        "Hole radius (mm)",
+        "Note holes";
+        note_hole_radius_mm,
+        "Note hole radius (mm)",
         ValueType::Number,
         f64,
-        HELP_HOLE_RADIUS;
-        hole_colour,
-        "Hole colour",
+        HELP_NOTE_HOLE_RADIUS;
+        note_hole_colour,
+        "Note hole colour",
         ValueType::Colour,
         String,
-        HELP_HOLE_COLOUR;
+        HELP_NOTE_HOLE_COLOUR;
     );
 
     // Staff general
@@ -233,16 +237,21 @@ impl Settings {
         ValueType::Number,
         f64,
         HELP_SPROCKET_HOLE_DISTANCE_STAFF;
+        sprocket_hole_colour,
+        "Sprocket holes colour",
+        ValueType::Colour,
+        String,
+        HELP_SPROCKET_HOLE_COLOUR;
     );
 }
 
 // Help
 
-// Holes
-const HELP_HOLE_RADIUS: &str =
+// Notes
+const HELP_NOTE_HOLE_RADIUS: &str =
     r#"This is the radius of the holes. The red circles in the example file."#;
 
-const HELP_HOLE_COLOUR: &str =
+const HELP_NOTE_HOLE_COLOUR: &str =
     r#"This is the colour of the holes. The red circles in the example file."#;
 
 // Staff
@@ -277,3 +286,6 @@ const HELP_SPROCKET_HOLE_DISTANCE: &str = r#"This is the distance of the centres
 
 const HELP_SPROCKET_HOLE_DISTANCE_STAFF: &str =
     r#"This is the distance of the sprocket holes to the staff."#;
+
+const HELP_SPROCKET_HOLE_COLOUR: &str =
+    r#"This is the colour of the sprocket holes. They are Yellow in the example file"#;

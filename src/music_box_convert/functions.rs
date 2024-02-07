@@ -440,8 +440,8 @@ impl MusicBoxConvert {
                             * self.scale.res()?.y
                             + self.settings.res()?.staff_offset_mm,
                     )
-                    .set_radius(self.settings.res()?.hole_radius_mm)
-                    .set_fill(self.settings.res()?.hole_colour.clone())
+                    .set_radius(self.settings.res()?.note_hole_radius_mm)
+                    .set_fill(self.settings.res()?.note_hole_colour.clone())
                     .finish(),
             );
 
@@ -475,8 +475,8 @@ impl MusicBoxConvert {
                 document.append(
                     Circle::new_builder()
                         .set_centre(current_x, top_y)
-                        .set_radius(self.settings.res()?.hole_radius_mm)
-                        .set_fill(self.settings.res()?.hole_colour.clone())
+                        .set_radius(self.settings.res()?.note_hole_radius_mm)
+                        .set_fill(self.settings.res()?.sprocket_hole_colour.clone())
                         .finish(),
                 );
 
@@ -484,8 +484,8 @@ impl MusicBoxConvert {
                 document.append(
                     Circle::new_builder()
                         .set_centre(current_x, bot_y)
-                        .set_radius(self.settings.res()?.hole_radius_mm)
-                        .set_fill(self.settings.res()?.hole_colour.clone())
+                        .set_radius(self.settings.res()?.note_hole_radius_mm)
+                        .set_fill(self.settings.res()?.sprocket_hole_colour.clone())
                         .finish(),
                 );
             }
