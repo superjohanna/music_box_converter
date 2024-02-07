@@ -249,10 +249,10 @@ impl Settings {
 
 // Notes
 const HELP_NOTE_HOLE_RADIUS: &str =
-    r#"This is the radius of the holes. The red circles in the example file."#;
+    r#"This is the radius of the note holes. The red circles in the example file."#;
 
 const HELP_NOTE_HOLE_COLOUR: &str =
-    r#"This is the colour of the holes. The red circles in the example file."#;
+    r#"This is the colour of the note holes. The red circles in the example file."#;
 
 // Staff
 const HELP_STAFF_OFFSET: &str = r#"This is the offset between the top left corner of the file and the corner of the bounding box."#;
