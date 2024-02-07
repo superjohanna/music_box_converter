@@ -10,6 +10,7 @@
   "staff_bounding_box_left_right_colour": "#ff00ff",
   "paper_size_x": 297.0,
   "paper_size_y": 210.0,
-  "sprocket_hole_enable": true,
-  "sprocket_hole_distance": 40.0
+  "sprocket_hole_enable": false,
+  "sprocket_hole_distance_mm": 50.0,
+  "sprocket_hole_distance_staff_mm": 2.5
 }

@@ -228,33 +228,41 @@ impl MusicBoxConvert {
         pages.push(Vec::<Event>::new());
 
         // Loop variables
-        let mut first_note_pos = u64::MIN;
-        let mut overflow = u64::MIN;
+        let mut first_note_abs = u64::MIN;
+        let mut overflow_notes = u64::MIN;
+        let mut overflow_sprockets = 0f64;
 
         for event in self.track.clone().unwrap().iter() {
             if event.vel == 0 {
                 continue;
             }
-            if (event.abs - first_note_pos + overflow) as f64 * self.scale.res()?.x
+            if (event.abs - first_note_abs + overflow_notes) as f64 * self.scale.res()?.x
+                + self.settings.res()?.staff_offset_mm
                 > self.settings.res()?.paper_size_x
             {
-                self.draw_page(pages.last().unwrap(), overflow);
-                overflow = event.abs - pages.last().unwrap().last().unwrap().abs;
+                overflow_sprockets =
+                    self.draw_page(pages.last().unwrap(), overflow_notes, overflow_sprockets)?;
+                overflow_notes = event.abs - pages.last().unwrap().last().unwrap().abs;
                 pages.push(Vec::<Event>::new());
-                first_note_pos = event.abs;
+                first_note_abs = event.abs;
             }
 
             pages.last_mut().unwrap().push(event.clone());
         }
 
-        self.draw_page(pages.last().unwrap(), overflow);
+        self.draw_page(pages.last().unwrap(), overflow_notes, overflow_sprockets)?;
 
         Ok(())
     }
 
     /// Don't call manually.
     /// It's called by <code>self.generate_svgs</code>.
-    fn draw_page(&mut self, notes: &Vec<Event>, overflow: u64) -> Result<()> {
+    fn draw_page(
+        &mut self,
+        notes: &Vec<Event>,
+        overflow_notes: u64,
+        overflow_sprockets: f64,
+    ) -> Result<f64> {
         // Output
         let mut document = Document::default();
 
@@ -266,7 +274,8 @@ impl MusicBoxConvert {
                 Line::new_builder()
                     .set_start(self.settings.res()?.staff_offset_mm, current_pos)
                     .set_end(
-                        (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                        (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                            as f64
                             * self.scale.res()?.x
                             + self.settings.res()?.staff_offset_mm,
                         current_pos,
@@ -275,14 +284,6 @@ impl MusicBoxConvert {
                     .set_stroke_width(self.settings.res()?.staff_line_thickness_mm)
                     .finish(),
             );
-        }
-
-        // Draw Sprocket holes
-        if self.settings.res()?.sprocket_hole_enable {
-            let page_size_x = self.settings.res()?.paper_size_x;
-            for i in 0..= (page_size_x / self.settings.res()?.sprocket_hole_distance).floor() as u64 {
-                document.append(Circle::new_builder());
-            }
         }
 
         // Draw staff bounding box
@@ -320,7 +321,8 @@ impl MusicBoxConvert {
         document.append(
             Line::new_builder()
                 .set_start(
-                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                        as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
                     self.settings.res()?.staff_offset_mm
@@ -330,7 +332,8 @@ impl MusicBoxConvert {
                             .staff_bounding_box_top_bottom_distance_mm,
                 )
                 .set_end(
-                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                        as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
                     self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
@@ -362,7 +365,8 @@ impl MusicBoxConvert {
                             .staff_bounding_box_top_bottom_distance_mm,
                 )
                 .set_end(
-                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                        as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
                     self.settings.res()?.staff_offset_mm
@@ -394,7 +398,8 @@ impl MusicBoxConvert {
                             .staff_bounding_box_top_bottom_distance_mm,
                 )
                 .set_end(
-                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                        as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
                     self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
@@ -416,6 +421,7 @@ impl MusicBoxConvert {
 
         // Draw notes
         let first_note_pos = notes.first().unwrap().abs;
+        let mut stop_point_sprocket = u64::MIN;
 
         for event in notes {
             info!("Drawing {}", event.note);
@@ -428,7 +434,7 @@ impl MusicBoxConvert {
             document.append(
                 Circle::new_builder()
                     .set_centre(
-                        (event.abs + overflow - first_note_pos) as f64 * self.scale.res()?.x
+                        (event.abs + overflow_notes - first_note_pos) as f64 * self.scale.res()?.x
                             + self.settings.res()?.staff_offset_mm,
                         (self.music_box.res()?.note_count() - note_index) as f64
                             * self.scale.res()?.y
@@ -438,11 +444,57 @@ impl MusicBoxConvert {
                     .set_fill(self.settings.res()?.hole_colour.clone())
                     .finish(),
             );
+
+            stop_point_sprocket = event.abs - first_note_pos + overflow_notes;
+        }
+
+        let mut current_x = 0f64;
+
+        info!("Drawing sprocket holes");
+        // Draw sprocket holes
+        if self.settings.res()?.sprocket_hole_enable {
+            // Y position of the top holes
+            let top_y = self.settings.res()?.staff_offset_mm
+                - self.settings.res()?.sprocket_hole_distance_staff_mm;
+
+            // Y position of the bottom holes
+            let bot_y = self.settings.res()?.staff_offset_mm
+                + ((self.music_box.res()?.note_count() - 1) as f64 * self.scale.res()?.y)
+                + self.settings.res()?.sprocket_hole_distance_staff_mm;
+
+            let page_size_x = self.settings.res()?.paper_size_x;
+            let sprocket_area =
+                self.scale.res()?.x * stop_point_sprocket as f64 - overflow_sprockets;
+            for i in
+                0..=(sprocket_area / self.settings.res()?.sprocket_hole_distance_mm).floor() as u64
+            {
+                current_x = (self.settings.res()?.staff_offset_mm + overflow_sprockets)
+                    + (i as f64 * self.settings.res()?.sprocket_hole_distance_mm);
+
+                // Top hole
+                document.append(
+                    Circle::new_builder()
+                        .set_centre(current_x, top_y)
+                        .set_radius(self.settings.res()?.hole_radius_mm)
+                        .set_fill(self.settings.res()?.hole_colour.clone())
+                        .finish(),
+                );
+
+                // Bottom hole
+                document.append(
+                    Circle::new_builder()
+                        .set_centre(current_x, bot_y)
+                        .set_radius(self.settings.res()?.hole_radius_mm)
+                        .set_fill(self.settings.res()?.hole_colour.clone())
+                        .finish(),
+                );
+            }
         }
 
         self.svg.push(document);
 
-        Ok(())
+        // Return the overflow of the sprocket holes
+        Ok(self.settings.res()?.paper_size_x - self.settings.res()?.staff_offset_mm - current_x)
     }
 
     /// Writes the documents to a file

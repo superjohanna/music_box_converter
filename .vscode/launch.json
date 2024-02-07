@@ -12,7 +12,7 @@
             "args": [
                 "convert",
                 "-i",
-                "meg_wiwauf_laminat1.mid",
+                "meg_wiwauf_laminat1.transposed.mid",
                 "-o",
                 "./out/",
                 "-O",

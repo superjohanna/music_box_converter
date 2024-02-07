@@ -32,7 +32,8 @@ pub struct Settings {
 
     // Sprocket holes
     pub sprocket_hole_enable: bool,
-    pub sprocket_hole_distance: f64,
+    pub sprocket_hole_distance_mm: f64,
+    pub sprocket_hole_distance_staff_mm: f64,
 }
 
 impl Settings {
@@ -57,7 +58,8 @@ impl Settings {
             15 => self.paper_size_y = val.self_to_f64().unwrap(),
             // Sprocket holes
             17 => self.sprocket_hole_enable = val.self_to_bool().unwrap(),
-            18 => self.sprocket_hole_distance = val.self_to_f64().unwrap(),
+            18 => self.sprocket_hole_distance_mm = val.self_to_f64().unwrap(),
+            19 => self.sprocket_hole_distance_staff_mm = val.self_to_f64().unwrap(),
             _ => (),
         }
     }
@@ -89,7 +91,8 @@ impl Settings {
             15 => Some(ValueWrapper::from_f64(self.paper_size_y)),
             // Sprocket holes
             17 => Some(ValueWrapper::from_bool(self.sprocket_hole_enable)),
-            18 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance)),
+            18 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance_mm)),
+            19 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance_staff_mm)),
             _ => None,
         }
     }
@@ -108,7 +111,8 @@ impl Settings {
         paper_size_x,
         paper_size_y,
         sprocket_hole_enable,
-        sprocket_hole_distance,
+        sprocket_hole_distance_mm,
+        sprocket_hole_distance_staff_mm,
     );
 
     // To add a new group with new items
@@ -219,11 +223,16 @@ impl Settings {
         ValueType::Boolean,
         bool,
         HELP_SPROCKET_ENABLE;
-        sprocket_hole_distance,
+        sprocket_hole_distance_mm,
         "Sprocket hole distance (mm)",
         ValueType::Number,
         f64,
         HELP_SPROCKET_HOLE_DISTANCE;
+        sprocket_hole_distance_staff_mm,
+        "Sprocket hole distance to staff (mm)",
+        ValueType::Number,
+        f64,
+        HELP_SPROCKET_HOLE_DISTANCE_STAFF;
     );
 }
 
@@ -265,3 +274,6 @@ const HELP_PAPER_HEIGHT: &str = r#"This setting is currently unused."#;
 const HELP_SPROCKET_ENABLE: &str = r#"This enables or disables the sprocket holes."#;
 
 const HELP_SPROCKET_HOLE_DISTANCE: &str = r#"This is the distance of the centres of two sprocket holes. In the example file they are also red, but they are one the edges in fixed distances."#;
+
+const HELP_SPROCKET_HOLE_DISTANCE_STAFF: &str =
+    r#"This is the distance of the sprocket holes to the staff."#;
