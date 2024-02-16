@@ -8,7 +8,7 @@ impl MusicBoxConfig {
     pub fn get_command() -> Command {
         Command::new("config")
             .about("GUI configuration program for the converter")
-            .version("1.0.0")
+            .version("1.0.1")
             .arg_required_else_help(false)
             .author("Johanna Wehner, superjohannaa@gmail.com")
             .arg(

@@ -9,7 +9,7 @@ impl MusicBoxConvert {
     pub fn get_command() -> Command {
         Command::new("convert")
         .about("Converts a MIDI file (*.midi|*.mid) into an SVG file (*.svg)")
-        .version("1.0.0")
+        .version("1.0.1")
         .arg_required_else_help(true)
         .author("Johanna Wehner, superjohannaa@gmail.com")
         .arg(
