@@ -1,7 +1,7 @@
 // std
 use std::{
     fs::{self, File},
-    io::{BufReader, Read},
+    io::{BufReader, Read, Write},
 };
 
 // simplelog
@@ -25,14 +25,14 @@ use crate::{
     },
     prelude::*,
     settings::Settings,
-    svg::{circle::Circle, document::Document, line::Line},
+    svg_writer::{circle::Circle, document::Document, line::Line},
     vec2::Vec2,
 };
 
 impl MusicBoxConvert {
     pub fn run_output_file(mut self) -> Result<()> {
-        self.choose_log_level()?;
-        self.choose_music_box()?;
+        self.initiate_logger()?;
+        self.load_music_box()?;
         self.load_settings()?;
         self.get_abs()?;
         self.set_scale_factor()?;
@@ -43,8 +43,8 @@ impl MusicBoxConvert {
     }
 
     pub fn run_output_string(mut self) -> Result<Vec<String>> {
-        self.choose_log_level()?;
-        self.choose_music_box()?;
+        self.initiate_logger()?;
+        self.load_music_box()?;
         self.load_settings()?;
         self.get_abs()?;
         self.set_scale_factor()?;
@@ -52,7 +52,8 @@ impl MusicBoxConvert {
         self.output_documents()
     }
 
-    fn choose_log_level(&mut self) -> Result<()> {
+    /// Initiates the logger with the correct log level. The logger is static and so this musn't be called more than once
+    fn initiate_logger(&mut self) -> Result<()> {
         let verbosity = self.args.get_count("verbosity");
         let quiet = self.args.get_flag("quiet");
         if quiet {
@@ -87,10 +88,15 @@ impl MusicBoxConvert {
     }
 
     /// Deserializes ./box.json and assigns the MusicBox with the name given via arguments to the self.music_box.
-    fn choose_music_box(&mut self) -> Result<()> {
+    fn load_music_box(&mut self) -> Result<()> {
         let file = match File::open(self.args.get_one::<String>("io_box").unwrap()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => {
+                return Err(Error::IOError(
+                    Box::new(e),
+                    Box::new(self.args.get_one::<String>("io_box").unwrap().to_string()),
+                ))
+            }
         };
 
         let deserialized: MusicBox = match serde_json::from_reader(BufReader::new(file)) {
@@ -106,7 +112,12 @@ impl MusicBoxConvert {
     fn load_settings(&mut self) -> Result<()> {
         let file = match File::open(self.args.get_one::<String>("io_settings").unwrap()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => {
+                return Err(Error::IOError(
+                    Box::new(e),
+                    Box::new(self.args.get_one::<String>("io_settings").unwrap().clone()),
+                ))
+            }
         };
 
         let deserialized: Settings = match serde_json::from_reader(BufReader::new(file)) {
@@ -118,7 +129,7 @@ impl MusicBoxConvert {
         Ok(())
     }
 
-    /// Stores an absolute representation of the midi data in self.absolute_track
+    /// Stores an absolute representation of the midi data in self.track. Also output a midi file including all track plus an extra one containing the possibly transposed track.
     fn get_abs(&mut self) -> Result<()> {
         let mut input = self.args.get_one::<String>("io_in").unwrap().to_owned();
         let track_number = self.args.get_one::<usize>("track").unwrap().to_owned();
@@ -128,9 +139,9 @@ impl MusicBoxConvert {
             input.remove(0);
         }
 
-        let mut file: Vec<u8> = match std::fs::read(input) {
+        let mut file: Vec<u8> = match std::fs::read(input.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(input))),
         };
 
         let smf: Smf = match Smf::parse(&file) {
@@ -159,6 +170,38 @@ impl MusicBoxConvert {
             )));
         }
 
+        if let Some(t) = self.args.get_one::<String>("io_out_midi") {
+            let mut abs_path = match crate::path::absolute_path(t) {
+                Ok(t) => t,
+                Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
+            };
+
+            let parent = abs_path.parent();
+
+            if let Some(t) = parent {
+                match std::fs::create_dir_all(t) {
+                    Ok(t) => t,
+                    Err(e) => (), /*return Err(Error::IOError(Box::new(e)))*/
+                }
+            }
+
+            let mut file = match File::create(abs_path) {
+                Ok(t) => t,
+                Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
+            };
+
+            let track = self
+                .track
+                .clone()
+                .unwrap()
+                .to_midi_track(smf.tracks[0].clone());
+            let mut midi = smf.clone();
+            let mut buf = Vec::<u8>::new();
+            midi.tracks.push(track);
+            midi.write(&mut buf);
+            file.write_all(&buf);
+        }
+
         Ok(())
     }
 
@@ -185,30 +228,41 @@ impl MusicBoxConvert {
         pages.push(Vec::<Event>::new());
 
         // Loop variables
-        let mut first_note_pos = u64::MIN;
-        let mut overflow = u64::MIN;
+        let mut first_note_abs = u64::MIN;
+        let mut overflow_notes = u64::MIN;
+        let mut overflow_sprockets = 0f64;
 
         for event in self.track.clone().unwrap().iter() {
-            if (event.abs - first_note_pos + overflow) as f64 * self.scale.res()?.x
+            if event.vel == 0 {
+                continue;
+            }
+            if (event.abs - first_note_abs + overflow_notes) as f64 * self.scale.res()?.x
+                + self.settings.res()?.staff_offset_mm
                 > self.settings.res()?.paper_size_x
             {
-                self.draw_page(pages.last().unwrap(), overflow);
-                overflow = event.abs - pages.last().unwrap().last().unwrap().abs;
+                overflow_sprockets =
+                    self.draw_page(pages.last().unwrap(), overflow_notes, overflow_sprockets)?;
+                overflow_notes = event.abs - pages.last().unwrap().last().unwrap().abs;
                 pages.push(Vec::<Event>::new());
-                first_note_pos = event.abs;
+                first_note_abs = event.abs;
             }
 
             pages.last_mut().unwrap().push(event.clone());
         }
 
-        self.draw_page(pages.last().unwrap(), overflow);
+        self.draw_page(pages.last().unwrap(), overflow_notes, overflow_sprockets)?;
 
         Ok(())
     }
 
     /// Don't call manually.
     /// It's called by <code>self.generate_svgs</code>.
-    fn draw_page(&mut self, notes: &Vec<Event>, overflow: u64) -> Result<()> {
+    fn draw_page(
+        &mut self,
+        notes: &Vec<Event>,
+        overflow_notes: u64,
+        overflow_sprockets: f64,
+    ) -> Result<f64> {
         // Output
         let mut document = Document::default();
 
@@ -220,7 +274,8 @@ impl MusicBoxConvert {
                 Line::new_builder()
                     .set_start(self.settings.res()?.staff_offset_mm, current_pos)
                     .set_end(
-                        (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                        (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                            as f64
                             * self.scale.res()?.x
                             + self.settings.res()?.staff_offset_mm,
                         current_pos,
@@ -266,7 +321,8 @@ impl MusicBoxConvert {
         document.append(
             Line::new_builder()
                 .set_start(
-                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                        as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
                     self.settings.res()?.staff_offset_mm
@@ -276,7 +332,8 @@ impl MusicBoxConvert {
                             .staff_bounding_box_top_bottom_distance_mm,
                 )
                 .set_end(
-                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                        as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
                     self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
@@ -308,7 +365,8 @@ impl MusicBoxConvert {
                             .staff_bounding_box_top_bottom_distance_mm,
                 )
                 .set_end(
-                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                        as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
                     self.settings.res()?.staff_offset_mm
@@ -340,7 +398,8 @@ impl MusicBoxConvert {
                             .staff_bounding_box_top_bottom_distance_mm,
                 )
                 .set_end(
-                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow) as f64
+                    (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
+                        as f64
                         * self.scale.res()?.x
                         + self.settings.res()?.staff_offset_mm,
                     self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
@@ -362,6 +421,7 @@ impl MusicBoxConvert {
 
         // Draw notes
         let first_note_pos = notes.first().unwrap().abs;
+        let mut stop_point_sprocket = u64::MIN;
 
         for event in notes {
             info!("Drawing {}", event.note);
@@ -374,34 +434,80 @@ impl MusicBoxConvert {
             document.append(
                 Circle::new_builder()
                     .set_centre(
-                        (event.abs + overflow - first_note_pos) as f64 * self.scale.res()?.x
+                        (event.abs + overflow_notes - first_note_pos) as f64 * self.scale.res()?.x
                             + self.settings.res()?.staff_offset_mm,
                         (self.music_box.res()?.note_count() - note_index) as f64
                             * self.scale.res()?.y
                             + self.settings.res()?.staff_offset_mm,
                     )
-                    .set_radius(self.settings.res()?.hole_radius_mm)
-                    .set_fill(self.settings.res()?.hole_colour.clone())
+                    .set_radius(self.settings.res()?.note_hole_radius_mm)
+                    .set_fill(self.settings.res()?.note_hole_colour.clone())
                     .finish(),
             );
+
+            stop_point_sprocket = event.abs - first_note_pos + overflow_notes;
+        }
+
+        let mut current_x = 0f64;
+
+        info!("Drawing sprocket holes");
+        // Draw sprocket holes
+        if self.settings.res()?.sprocket_hole_enable {
+            // Y position of the top holes
+            let top_y = self.settings.res()?.staff_offset_mm
+                - self.settings.res()?.sprocket_hole_distance_staff_mm;
+
+            // Y position of the bottom holes
+            let bot_y = self.settings.res()?.staff_offset_mm
+                + ((self.music_box.res()?.note_count() - 1) as f64 * self.scale.res()?.y)
+                + self.settings.res()?.sprocket_hole_distance_staff_mm;
+
+            let page_size_x = self.settings.res()?.paper_size_x;
+            let sprocket_area =
+                self.scale.res()?.x * stop_point_sprocket as f64 - overflow_sprockets;
+            for i in
+                0..=(sprocket_area / self.settings.res()?.sprocket_hole_distance_mm).floor() as u64
+            {
+                current_x = (self.settings.res()?.staff_offset_mm + overflow_sprockets)
+                    + (i as f64 * self.settings.res()?.sprocket_hole_distance_mm);
+
+                // Top hole
+                document.append(
+                    Circle::new_builder()
+                        .set_centre(current_x, top_y)
+                        .set_radius(self.settings.res()?.note_hole_radius_mm)
+                        .set_fill(self.settings.res()?.sprocket_hole_colour.clone())
+                        .finish(),
+                );
+
+                // Bottom hole
+                document.append(
+                    Circle::new_builder()
+                        .set_centre(current_x, bot_y)
+                        .set_radius(self.settings.res()?.note_hole_radius_mm)
+                        .set_fill(self.settings.res()?.sprocket_hole_colour.clone())
+                        .finish(),
+                );
+            }
         }
 
         self.svg.push(document);
 
-        Ok(())
+        // Return the overflow of the sprocket holes
+        Ok(self.settings.res()?.paper_size_x - self.settings.res()?.staff_offset_mm - current_x)
     }
 
     /// Writes the documents to a file
     fn write_documents(&self) -> Result<()> {
         let mut path_string = self.args.get_one::<String>("io_out").unwrap().to_owned();
-        let mut abs_path = match crate::path::absolute_path(path_string) {
+        let mut abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         };
 
         match std::fs::create_dir_all(abs_path.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         }
 
         for (i, svg) in self.svg.iter().enumerate() {

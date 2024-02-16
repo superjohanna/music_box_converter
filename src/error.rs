@@ -11,7 +11,7 @@ pub enum Error {
     Internal(String),
 
     #[error("IO Error: {0}")]
-    IOError(Box<io::Error>),
+    IOError(Box<io::Error>, Box<String>),
     #[error("Serialization Error: {0}")]
     SerdeJsonError(Box<serde_json::Error>),
     #[error("Midi Error: {0}")]

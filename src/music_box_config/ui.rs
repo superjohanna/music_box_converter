@@ -9,25 +9,22 @@ use ratatui::{
     Frame,
 };
 
-use crate::{music_box_config::config_groups::GroupListTrait, ShortAsRef};
+use self::value::ValueType;
 
 // Internal
 use super::MusicBoxConfig;
+use super::item_list::*;
 
 pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Update liststate
-    app.list_state.select(Some(app.settings_index));
+    app.list_state.select(Some(app.index));
 
     // Set the maximum length which is used for the key input.
-    app.settings_arr_length = app.groups.len() - 1;
-    app.groups
-        .iter()
-        .for_each(|x| app.settings_arr_length += x.items.len());
+    app.max_index = app.settings_item_list.len() - 1;
 
     // Chunks
-    let (chunks_main, chunks_sub, chunks_sub_sub) =
-        // max_char_length = length of the largest item. This panics if there are no settings. Unwrap is okay.
-        chunks(f.size(), app.groups.max_length().unwrap());
+    let (terminal_chunks, mid_section_chunks, mid_right_chunks) =
+        get_chunks(f.size(), app.settings_item_list.longest_human_readable_name_length);
 
     // Block
     let block = Block::default()
@@ -37,43 +34,23 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     // Title
     f.render_widget(
-        title().block(block.clone().borders(Borders::BOTTOM)),
-        chunks_main[0],
+        get_title().block(block.clone().borders(Borders::BOTTOM)),
+        terminal_chunks[0],
     );
 
     // Editor (The part where text pops up if you press keys).
     f.render_widget(
-        editor(app).block(block.clone().title("Editor")),
-        chunks_sub_sub[0],
+        get_editor(app).block(block.clone().title("Editor")),
+        mid_right_chunks[0],
     );
 
     // Tip
-    let tip = match app.settings_value_type_arr[app.settings_index].0 {
-        super::config_groups::ValueType::None => {
-            Line::from(vec![
-                Span::from("Tip: ").bold(),
-                Span::from("This is a group. Editing it does nothing. It's only here for organization."),
-                ])
-        },
-        super::config_groups::ValueType::Number => {
-            
-            Line::from(vec![
-                Span::from("Tip: ").bold(),
-                Span::from("This is a floating point number. It can be an integer or two integers seperated by a period (50 and 50.0 are the same)."),
-                ])
-        },
-        super::config_groups::ValueType::Colour => {
-            Line::from(vec![
-                Span::from("Tip: ").bold(),
-                Span::from("This is a colour. You can use hex notation (#ffffff for white) or rgb notation (rgb(255, 255, 255) for white) or any other svg supported format."),
-            ])
-        },
-    };
+    let tip = get_tip(app);
 
-    let help = if !app.settings_value_type_arr[app.settings_index].1.is_empty() {
+    let help = if !app.settings_item_list[app.index].help.is_empty() {
         Line::from(vec![
             Span::from("Help: ").bold(),
-            Span::from(app.settings_value_type_arr[app.settings_index].1.clone()),
+            Span::from(app.settings_item_list[app.index].help.clone()),
         ])
     } else {
         Line::from("")
@@ -81,25 +58,22 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     let tip_and_help = Paragraph::new(vec![tip, Line::from(""), help]);
 
-    f.render_widget(tip_and_help.wrap(Wrap { trim: false }), chunks_sub_sub[1]);
+    f.render_widget(tip_and_help.wrap(Wrap { trim: false }), mid_right_chunks[1]);
 
     // Navbar
     f.render_widget(
-        navbar().block(block.clone().borders(Borders::TOP)),
-        chunks_main[2],
+        get_navbar().block(block.clone().borders(Borders::TOP)),
+        terminal_chunks[2],
     );
 
     // Settings
     let mut list = Vec::<ListItem>::new();
 
-    for group in app.groups.clone() {
-        list.push(ListItem::new(Line::from(
-            Span::raw(group.name.clone()).bold(),
-        )));
-        for item in group.items {
-            list.push(ListItem::new(Line::from(
-                Span::raw(item.human_readable_name.clone()),
-            )))
+    for item in app.settings_item_list.iter() {
+        if let ValueType::None = item.value_type {
+            list.push(ListItem::new(item.human_name.clone()).bold())
+        } else {
+            list.push(ListItem::new(item.human_name.clone()));
         }
     }
 
@@ -107,7 +81,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         .block(block.clone().title("Settings"))
         .highlight_symbol(">>");
 
-    f.render_stateful_widget(list, chunks_sub[0], &mut app.list_state);
+    f.render_stateful_widget(list, mid_section_chunks[0], &mut app.list_state);
 
     // Check for popup
     // Shamelessly stolen from https://github.com/fdehau/tui-rs/blob/master/examples/popup.rs
@@ -116,7 +90,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             .title("Error")
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
-        let area = centered_rect(60, 20, f.size());
+        let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
             Line::from("The value you inputted is not a valid float."),
             Line::from("An Example of a valid float would be any integer ('50') or a two integers seperated by a period ('50.1')."),
@@ -138,9 +112,9 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             .title("Error")
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
-        let area = centered_rect(60, 20, f.size());
+        let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
-            Line::from(format!("Couldn't save file to '{}'", app.output_path)),
+            Line::from(format!("Couldn't save file to '{}'", app.path_buf)),
             Line::from(error),
         ]).block(block).wrap(Wrap { trim: false });
 
@@ -159,9 +133,9 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             .title("Error")
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
-        let area = centered_rect(60, 20, f.size());
+        let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
-            Line::from(format!("Couldn't open file '{}'", app.output_path)),
+            Line::from(format!("Couldn't open file '{}'", app.path_buf)),
             Line::from(error),
         ]).block(block).wrap(Wrap { trim: false });
 
@@ -179,7 +153,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             .title("Save")
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
-        let area = centered_rect(60, 20, f.size());
+        let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
             Line::from("Saving to:"),
             Line::from("->".to_string() + t.as_str()),
@@ -201,7 +175,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             .title("Open")
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
-        let area = centered_rect(60, 20, f.size());
+        let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
             Line::from("Opening:"),
             Line::from("->".to_string() + t.as_str()),
@@ -218,7 +192,38 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     }
 }
 
-fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]>) {
+fn get_tip(app: &MusicBoxConfig) -> Line<'_> {
+    match app.settings_item_list[app.index].value_type {
+        ValueType::None => {
+            Line::from(vec![
+                Span::from("Tip: ").bold(),
+                Span::from("This is a group. Editing it does nothing. It's only here for organization."),
+                ])
+        },
+        ValueType::Number => {
+        
+            Line::from(vec![
+                Span::from("Tip: ").bold(),
+                Span::from("This is a floating point number. It can be an integer or two integers seperated by a period (50 and 50.0 are the same)."),
+                ])
+        },
+        ValueType::Colour => {
+            Line::from(vec![
+                Span::from("Tip: ").bold(),
+                Span::from("This is a colour. You can use hex notation (#ffffff for white) or rgb notation (rgb(255, 255, 255) for white) or any other svg supported format."),
+            ])
+        },
+        ValueType::Boolean => {
+            Line::from(vec![
+                Span::from("Tip: ").bold(),
+                Span::from("This is a checkbox. You can toggle it on or off with the spacebar."),
+            ])
+        },
+    }
+}
+
+#[allow(clippy::type_complexity)]
+fn get_chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]>) {
     let chunks_main = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Max(2), Constraint::Min(1), Constraint::Max(3)])
@@ -227,8 +232,8 @@ fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]
     let chunks_sub = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            // Plus two for the borders.
-            Constraint::Max(max_char_length as u16 + 2u16),
+            // Plus two for the borders and two extra for the list selection symbol '>>'
+            Constraint::Max(max_char_length as u16 + 4u16),
             Constraint::Min(1),
         ])
         .split(chunks_main[1]);
@@ -251,16 +256,26 @@ fn chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]
     (chunks_main, chunks_sub, chunks_sub_sub)
 }
 
-fn title() -> Paragraph<'static> {
+fn get_title() -> Paragraph<'static> {
     Paragraph::new(Text::styled("Music box configurator", Style::default()))
         .alignment(Alignment::Center)
 }
 
-fn editor(app: &MusicBoxConfig) -> Paragraph<'_> {
-    Paragraph::new(Text::styled(&app.input_buf, Style::default()))
+fn get_editor(app: &MusicBoxConfig) -> Paragraph<'_> {
+    match app.settings_item_list[app.index].value_type {
+        ValueType::Boolean => {
+            // The windows console can't render the unicode characters I wanted to use ;(
+            if &app.input_buf == "false" {
+                Paragraph::new(Text::styled("Off", Style::default()))
+            } else {
+                Paragraph::new(Text::styled("On", Style::default()))
+            }
+        },
+        _ => Paragraph::new(Text::styled(&app.input_buf, Style::default())),
+    }
 }
 
-fn navbar() -> Paragraph<'static> {
+fn get_navbar() -> Paragraph<'static> {
     Paragraph::new(vec![
         Line::from("^S Save | ^O Open | ^X eXit"),
         Line::from("^L delete Line | ^E move up | ^D move down"),
@@ -268,7 +283,7 @@ fn navbar() -> Paragraph<'static> {
     .alignment(Alignment::Center)
 }
 
-fn centered_rect(x: u16, y: u16, r: Rect) -> Rect {
+fn centered_rect_helper(x: u16, y: u16, r: Rect) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints(

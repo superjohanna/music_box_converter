@@ -20,11 +20,12 @@ use ratatui::{
 use serde::{Serialize, Serializer};
 
 // Internal
-use super::{config_groups::ValueType, ui::ui, MusicBoxConfig};
-use crate::{
-    prelude::*,
-    settings::{Settings, StringOrF64},
+use super::{
+    item_list::value::{ValueType, ValueWrapper},
+    ui::ui,
+    MusicBoxConfig,
 };
+use crate::{prelude::*, settings::Settings};
 
 impl MusicBoxConfig {
     pub fn run(&mut self) -> Result<()> {
@@ -79,36 +80,42 @@ impl MusicBoxConfig {
                                 if self.popup {
                                     continue;
                                 }
-                                self.input_buf = String::new()
+                                if self.settings_item_list[self.index].value_type
+                                    == ValueType::Boolean
+                                {
+                                    self.input_buf = "false".to_string();
+                                    continue;
+                                }
+                                self.input_buf = String::new();
                             }
                             KeyCode::Char('s') => {
                                 if self.popup {
                                     continue;
                                 }
-                                self.save_file = Some(self.output_path.clone());
+                                self.save_file = Some(self.path_buf.clone());
                                 self.popup = true;
                             }
                             KeyCode::Char('o') => {
                                 if self.popup {
                                     continue;
                                 }
-                                self.open_file = Some(self.output_path.clone());
+                                self.open_file = Some(self.path_buf.clone());
                                 self.popup = true;
                             }
                             KeyCode::Char('e') => {
-                                if self.settings_index != 0 {
+                                if self.index != 0 {
                                     if self.update_settings_index(true).is_err() {
                                         continue;
                                     }
-                                    self.settings_index -= 1;
+                                    self.index -= 1;
                                 }
                             }
                             KeyCode::Char('d') => {
-                                if self.settings_index != self.settings_arr_length {
+                                if self.index != self.max_index {
                                     if self.update_settings_index(false).is_err() {
                                         continue;
                                     }
-                                    self.settings_index += 1;
+                                    self.index += 1;
                                 }
                             }
                             _ => (),
@@ -117,6 +124,18 @@ impl MusicBoxConfig {
                         match key.code {
                             KeyCode::Char(c) => {
                                 if self.popup {
+                                    continue;
+                                }
+                                if self.settings_item_list[self.index].value_type
+                                    == ValueType::Boolean
+                                {
+                                    if c == ' ' {
+                                        if &self.input_buf == "true" {
+                                            self.input_buf = "false".to_string()
+                                        } else {
+                                            self.input_buf = "true".to_string()
+                                        }
+                                    }
                                     continue;
                                 }
                                 if let Some(t) = &mut self.save_file {
@@ -144,7 +163,19 @@ impl MusicBoxConfig {
                     } else if key.modifiers == KeyModifiers::NONE {
                         match key.code {
                             KeyCode::Char(c) => {
-                                if self.parse_error {
+                                if self.popup {
+                                    continue;
+                                }
+                                if self.settings_item_list[self.index].value_type
+                                    == ValueType::Boolean
+                                {
+                                    if c == ' ' {
+                                        if &self.input_buf == "true" {
+                                            self.input_buf = "false".to_string()
+                                        } else {
+                                            self.input_buf = "true".to_string()
+                                        }
+                                    }
                                     continue;
                                 }
                                 if let Some(t) = &mut self.save_file {
@@ -182,7 +213,7 @@ impl MusicBoxConfig {
                                     self.open_error = None;
                                 }
                                 if let Some(t) = &self.save_file {
-                                    self.output_path = t.clone();
+                                    self.path_buf = t.clone();
                                     self.save_current_setting();
                                     if let Err(e) = self.save() {
                                         self.save_error = Some(Box::new(e));
@@ -191,7 +222,7 @@ impl MusicBoxConfig {
                                     };
                                 }
                                 if let Some(t) = &self.open_file {
-                                    self.output_path = t.clone();
+                                    self.path_buf = t.clone();
                                     if let Err(e) = self.open() {
                                         self.open_error = Some(Box::new(e));
                                         self.open_file = None;
@@ -202,19 +233,21 @@ impl MusicBoxConfig {
                                 self.popup = false;
                             }
                             KeyCode::Up => {
-                                if self.settings_index != 0 {
+                                if self.index != 0 {
                                     if self.update_settings_index(true).is_err() {
                                         continue;
                                     }
-                                    self.settings_index -= 1;
+                                    self.index -= 1;
+                                    continue;
                                 }
                             }
                             KeyCode::Down => {
-                                if self.settings_index != self.settings_arr_length {
+                                if self.index != self.max_index {
                                     if self.update_settings_index(false).is_err() {
                                         continue;
                                     }
-                                    self.settings_index += 1;
+                                    self.index += 1;
+                                    continue;
                                 }
                             }
                             KeyCode::Esc => {
@@ -244,44 +277,45 @@ impl MusicBoxConfig {
             return Err(Error::Generic("Popup".to_string()));
         }
         // Load next value
-        let (prev_value_type, prev_index) = (
-            self.settings_value_type_arr[self.settings_index].0,
-            self.settings_index,
-        );
+        let (prev_value_type, prev_index) =
+            (self.settings_item_list[self.index].value_type, self.index);
         let (next_value_type, next_index) = match negative {
             true => (
-                self.settings_value_type_arr[self.settings_index - 1].0,
+                self.settings_item_list[self.index - 1].value_type,
                 prev_index - 1,
             ),
             false => (
-                self.settings_value_type_arr[self.settings_index + 1].0,
+                self.settings_item_list[self.index + 1].value_type,
                 prev_index + 1,
             ),
         };
 
-        let prev_op: Option<StringOrF64> = match prev_value_type {
+        let prev_wrapper: Option<ValueWrapper> = match prev_value_type {
             ValueType::None => None,
-            ValueType::Colour => Some(StringOrF64::String(self.input_buf.clone())),
-            ValueType::Number => {
-                let res = self.input_buf.parse();
-                match res {
-                    Ok(t) => Some(StringOrF64::F64(t)),
-                    Err(_) => {
-                        self.parse_error = true;
-                        self.popup = true;
-                        return Err(Error::Generic("Couldn't parse".to_string()));
-                    }
+            ValueType::Colour => Some(ValueWrapper::String(self.input_buf.clone())),
+            ValueType::Number => match self.input_buf.parse() {
+                Ok(t) => Some(ValueWrapper::F64(t)),
+                Err(_) => {
+                    self.parse_error = true;
+                    self.popup = true;
+                    return Err(Error::Generic("Couldn't parse".to_string()));
                 }
-            }
+            },
+            ValueType::Boolean => match self.input_buf.parse() {
+                Ok(t) => Some(ValueWrapper::Boolean(t)),
+                Err(_) => {
+                    panic!("buffer wasn't true or false");
+                }
+            },
         };
 
-        if let Some(t) = prev_op {
+        if let Some(t) = prev_wrapper {
             self.settings.res_mut()?.set(prev_index, &t);
         }
 
-        let next_op = self.settings.res()?.get(next_index);
+        let next_wrapper = self.settings.res()?.get(next_index);
 
-        if let Some(t) = next_op {
+        if let Some(t) = next_wrapper {
             self.input_buf = t.to_string();
             return Ok(());
         }
@@ -291,29 +325,29 @@ impl MusicBoxConfig {
 
     /// Reduced update_settings_index
     fn save_current_setting(&mut self) -> Result<()> {
-        let (prev_value_type, prev_index) = (
-            self.settings_value_type_arr[self.settings_index].0,
-            self.settings_index,
-        );
+        let (value_type, index) = (self.settings_item_list[self.index].value_type, self.index);
 
-        let prev_op: Option<StringOrF64> = match prev_value_type {
+        let wrapper: Option<ValueWrapper> = match value_type {
             ValueType::None => None,
-            ValueType::Colour => Some(StringOrF64::String(self.input_buf.clone())),
-            ValueType::Number => {
-                let res = self.input_buf.parse();
-                match res {
-                    Ok(t) => Some(StringOrF64::F64(t)),
-                    Err(_) => {
-                        self.parse_error = true;
-                        self.popup = true;
-                        return Err(Error::Generic("Couldn't parse".to_string()));
-                    }
+            ValueType::Colour => Some(ValueWrapper::String(self.input_buf.clone())),
+            ValueType::Number => match self.input_buf.parse() {
+                Ok(t) => Some(ValueWrapper::F64(t)),
+                Err(_) => {
+                    self.parse_error = true;
+                    self.popup = true;
+                    return Err(Error::Generic("Couldn't parse".to_string()));
                 }
-            }
+            },
+            ValueType::Boolean => match self.input_buf.parse() {
+                Ok(t) => Some(ValueWrapper::Boolean(t)),
+                Err(_) => {
+                    panic!("buffer wasn't true or false");
+                }
+            },
         };
 
-        if let Some(t) = prev_op {
-            self.settings.res_mut()?.set(prev_index, &t);
+        if let Some(t) = wrapper {
+            self.settings.res_mut()?.set(index, &t);
         }
 
         Ok(())
@@ -321,10 +355,10 @@ impl MusicBoxConfig {
 
     /// Reduced update_settings_index
     fn load_current_setting(&mut self) -> Result<()> {
-        let next_value_type = self.settings_value_type_arr[self.settings_index].0;
-        let next_op = self.settings.res()?.get(self.settings_index);
+        let value_type = self.settings_item_list[self.index].value_type;
+        let wrapper = self.settings.res()?.get(self.index);
 
-        if let Some(t) = next_op {
+        if let Some(t) = wrapper {
             self.input_buf = t.to_string();
             return Ok(());
         }
@@ -334,14 +368,14 @@ impl MusicBoxConfig {
     /// Opens a file with the path provided by self.open_file and deserializes it to self.settings.
     fn open(&mut self) -> Result<()> {
         let path_string = self.open_file.clone().unwrap();
-        let abs_path = match crate::path::absolute_path(path_string) {
+        let abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         };
 
         let file = match File::open(abs_path) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         };
 
         let deserialized: Settings = match serde_json::from_reader(BufReader::new(file)) {
@@ -358,10 +392,10 @@ impl MusicBoxConfig {
 
     /// Saves a file to the path provided by self.save_file and serializes self.settings to it.
     fn save(&mut self) -> Result<()> {
-        let mut path_string = self.output_path.clone();
-        let mut abs_path = match crate::path::absolute_path(path_string) {
+        let mut path_string = self.path_buf.clone();
+        let mut abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e))),
+            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
         };
 
         let parent = abs_path.parent();

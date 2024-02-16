@@ -4,13 +4,14 @@ use serde_derive::{Deserialize, Serialize};
 // Internal
 use crate::config_macro_add_item;
 use crate::config_macro_list_items;
-use crate::music_box_config::config_groups::ValueType;
+use crate::music_box_config::item_list::value::ValueType;
+use crate::music_box_config::item_list::value::ValueWrapper;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Settings {
-    // Holes
-    pub hole_radius_mm: f64,
-    pub hole_colour: String,
+    // Notes
+    pub note_hole_radius_mm: f64,
+    pub note_hole_colour: String,
 
     // Staff
     pub staff_offset_mm: f64,
@@ -28,65 +29,81 @@ pub struct Settings {
     // Paper sizes
     pub paper_size_x: f64,
     pub paper_size_y: f64,
+
+    // Sprocket holes
+    pub sprocket_hole_enable: bool,
+    pub sprocket_hole_distance_mm: f64,
+    pub sprocket_hole_distance_staff_mm: f64,
+    pub sprocket_hole_colour: String,
 }
 
 impl Settings {
     // Sets a value given an index
-    pub fn set(&mut self, i: usize, val: &StringOrF64) {
+    pub fn set(&mut self, i: usize, val: &ValueWrapper) {
         match i {
-            // Holes
-            1 => self.hole_radius_mm = val.c_to_f64().unwrap(),
-            2 => self.hole_colour = val.c_to_string().unwrap(),
+            // Notes
+            1 => self.note_hole_radius_mm = val.self_to_f64().unwrap(),
+            2 => self.note_hole_colour = val.self_to_string().unwrap(),
             // Staff
-            4 => self.staff_offset_mm = val.c_to_f64().unwrap(),
+            4 => self.staff_offset_mm = val.self_to_f64().unwrap(),
             // Staff lines
-            6 => self.staff_line_thickness_mm = val.c_to_f64().unwrap(),
-            7 => self.staff_line_colour = val.c_to_string().unwrap(),
+            6 => self.staff_line_thickness_mm = val.self_to_f64().unwrap(),
+            7 => self.staff_line_colour = val.self_to_string().unwrap(),
             // Bounding box
-            9 => self.staff_bounding_box_thickness_mm = val.c_to_f64().unwrap(),
-            10 => self.staff_bounding_box_top_bottom_distance_mm = val.c_to_f64().unwrap(),
-            11 => self.staff_bounding_box_top_bottom_colour = val.c_to_string().unwrap(),
-            12 => self.staff_bounding_box_left_right_colour = val.c_to_string().unwrap(),
+            9 => self.staff_bounding_box_thickness_mm = val.self_to_f64().unwrap(),
+            10 => self.staff_bounding_box_top_bottom_distance_mm = val.self_to_f64().unwrap(),
+            11 => self.staff_bounding_box_top_bottom_colour = val.self_to_string().unwrap(),
+            12 => self.staff_bounding_box_left_right_colour = val.self_to_string().unwrap(),
             // Paper sizes
-            14 => self.paper_size_x = val.c_to_f64().unwrap(),
-            15 => self.paper_size_y = val.c_to_f64().unwrap(),
+            14 => self.paper_size_x = val.self_to_f64().unwrap(),
+            15 => self.paper_size_y = val.self_to_f64().unwrap(),
+            // Sprocket holes
+            17 => self.sprocket_hole_enable = val.self_to_bool().unwrap(),
+            18 => self.sprocket_hole_distance_mm = val.self_to_f64().unwrap(),
+            19 => self.sprocket_hole_distance_staff_mm = val.self_to_f64().unwrap(),
+            20 => self.sprocket_hole_colour = val.self_to_string().unwrap(),
             _ => (),
         }
     }
 
     // Gets a value given an index
-    pub fn get(&self, i: usize) -> Option<StringOrF64> {
+    pub fn get(&self, i: usize) -> Option<ValueWrapper> {
         match i {
-            // Holes
-            1 => Some(StringOrF64::from_f64(self.hole_radius_mm)),
-            2 => Some(StringOrF64::from_string(self.hole_colour.clone())),
+            // Notes
+            1 => Some(ValueWrapper::from_f64(self.note_hole_radius_mm)),
+            2 => Some(ValueWrapper::from_string(self.note_hole_colour.clone())),
             // Staff
-            4 => Some(StringOrF64::from_f64(self.staff_offset_mm)),
+            4 => Some(ValueWrapper::from_f64(self.staff_offset_mm)),
             // Staff lines
-            6 => Some(StringOrF64::from_f64(self.staff_line_thickness_mm)),
-            7 => Some(StringOrF64::from_string(self.staff_line_colour.clone())),
+            6 => Some(ValueWrapper::from_f64(self.staff_line_thickness_mm)),
+            7 => Some(ValueWrapper::from_string(self.staff_line_colour.clone())),
             // Bounding box
-            9 => Some(StringOrF64::from_f64(self.staff_bounding_box_thickness_mm)),
-            10 => Some(StringOrF64::from_f64(
+            9 => Some(ValueWrapper::from_f64(self.staff_bounding_box_thickness_mm)),
+            10 => Some(ValueWrapper::from_f64(
                 self.staff_bounding_box_top_bottom_distance_mm,
             )),
-            11 => Some(StringOrF64::from_string(
+            11 => Some(ValueWrapper::from_string(
                 self.staff_bounding_box_top_bottom_colour.clone(),
             )),
-            12 => Some(StringOrF64::from_string(
+            12 => Some(ValueWrapper::from_string(
                 self.staff_bounding_box_left_right_colour.clone(),
             )),
             // Paper sizes
-            14 => Some(StringOrF64::from_f64(self.paper_size_x)),
-            15 => Some(StringOrF64::from_f64(self.paper_size_y)),
+            14 => Some(ValueWrapper::from_f64(self.paper_size_x)),
+            15 => Some(ValueWrapper::from_f64(self.paper_size_y)),
+            // Sprocket holes
+            17 => Some(ValueWrapper::from_bool(self.sprocket_hole_enable)),
+            18 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance_mm)),
+            19 => Some(ValueWrapper::from_f64(self.sprocket_hole_distance_staff_mm)),
+            20 => Some(ValueWrapper::from_string(self.sprocket_hole_colour.clone())),
             _ => None,
         }
     }
 
     config_macro_list_items!(
         Settings,
-        hole_radius_mm,
-        hole_colour,
+        note_hole_radius_mm,
+        note_hole_colour,
         staff_offset_mm,
         staff_line_thickness_mm,
         staff_line_colour,
@@ -96,6 +113,10 @@ impl Settings {
         staff_bounding_box_left_right_colour,
         paper_size_x,
         paper_size_y,
+        sprocket_hole_enable,
+        sprocket_hole_distance_mm,
+        sprocket_hole_distance_staff_mm,
+        sprocket_hole_colour,
     );
 
     // To add a new group with new items
@@ -115,23 +136,23 @@ impl Settings {
     //Holes
     config_macro_add_item!(
         self,
-        "Holes",
-        hole_radius_mm,
-        "Hole radius (mm)",
+        "Note holes";
+        note_hole_radius_mm,
+        "Note hole radius (mm)",
         ValueType::Number,
         f64,
-        HELP_HOLE_RADIUS;
-        hole_colour,
-        "Hole colour",
+        HELP_NOTE_HOLE_RADIUS;
+        note_hole_colour,
+        "Note hole colour",
         ValueType::Colour,
         String,
-        HELP_HOLE_COLOUR;
+        HELP_NOTE_HOLE_COLOUR;
     );
 
     // Staff general
     config_macro_add_item!(
         self,
-        "Staff general",
+        "Staff general";
         staff_offset_mm,
         "Staff offset (mm)",
         ValueType::Number,
@@ -142,7 +163,7 @@ impl Settings {
     // Staff Lines
     config_macro_add_item!(
         self,
-        "Staff Lines",
+        "Staff Lines";
         staff_line_thickness_mm,
         "Staff line thickness (mm)",
         ValueType::Number,
@@ -158,7 +179,7 @@ impl Settings {
     // Bounding Box
     config_macro_add_item!(
         self,
-        "Bounding box",
+        "Bounding box";
         staff_bounding_box_thickness_mm,
         "Staff bounding box thickness (mm)",
         ValueType::Number,
@@ -184,7 +205,7 @@ impl Settings {
     // Paper size
     config_macro_add_item!(
         self,
-        "Paper size",
+        "Paper size";
         paper_size_x,
         "Paper length (mm)",
         ValueType::Number,
@@ -196,55 +217,42 @@ impl Settings {
         f64,
         HELP_PAPER_HEIGHT;
     );
-}
 
-#[derive(Debug, Clone)]
-pub enum StringOrF64 {
-    String(String),
-    F64(f64),
-}
-
-impl StringOrF64 {
-    pub fn c_to_string(&self) -> Option<String> {
-        match self {
-            Self::String(s) => Some(s.to_owned()),
-            _ => None,
-        }
-    }
-
-    pub fn c_to_f64(&self) -> Option<f64> {
-        match self {
-            Self::F64(f) => Some(*f),
-            _ => None,
-        }
-    }
-
-    pub fn from_string(s: String) -> StringOrF64 {
-        Self::String(s)
-    }
-
-    pub fn from_f64(f: f64) -> StringOrF64 {
-        Self::F64(f)
-    }
-}
-
-impl ToString for StringOrF64 {
-    fn to_string(&self) -> String {
-        match self {
-            Self::String(s) => s.to_owned(),
-            Self::F64(f) => f.to_string(),
-        }
-    }
+    // Sprocket holes
+    config_macro_add_item!(
+        self,
+        "Sprocket holes";
+        sprocket_hole_enable,
+        "Sprocket holes enable",
+        ValueType::Boolean,
+        bool,
+        HELP_SPROCKET_ENABLE;
+        sprocket_hole_distance_mm,
+        "Sprocket hole distance (mm)",
+        ValueType::Number,
+        f64,
+        HELP_SPROCKET_HOLE_DISTANCE;
+        sprocket_hole_distance_staff_mm,
+        "Sprocket hole distance to staff (mm)",
+        ValueType::Number,
+        f64,
+        HELP_SPROCKET_HOLE_DISTANCE_STAFF;
+        sprocket_hole_colour,
+        "Sprocket holes colour",
+        ValueType::Colour,
+        String,
+        HELP_SPROCKET_HOLE_COLOUR;
+    );
 }
 
 // Help
 
-// Holes
-const HELP_HOLE_RADIUS: &str =
-    r#"This is the radius of the holes. The red circles in the example file."#;
+// Notes
+const HELP_NOTE_HOLE_RADIUS: &str =
+    r#"This is the radius of the note holes. The red circles in the example file."#;
 
-const HELP_HOLE_COLOUR: &str =
-    r#"This is the colour of the holes. The red circles in the example file."#;
+const HELP_NOTE_HOLE_COLOUR: &str =
+    r#"This is the colour of the note holes. The red circles in the example file."#;
 
 // Staff
 const HELP_STAFF_OFFSET: &str = r#"This is the offset between the top left corner of the file and the corner of the bounding box."#;
@@ -270,3 +278,14 @@ const HELP_BOUNDING_BOX_LEFT_RIGHT_COLOUR: &str = r#"This is the colour of the l
 const HELP_PAPER_LENGTH: &str = r#"This is the length of the paper. If the length of the next note exceeds the paper length it will start a new file."#;
 
 const HELP_PAPER_HEIGHT: &str = r#"This setting is currently unused."#;
+
+// Sprocket holes
+const HELP_SPROCKET_ENABLE: &str = r#"This enables or disables the sprocket holes."#;
+
+const HELP_SPROCKET_HOLE_DISTANCE: &str = r#"This is the distance of the centres of two sprocket holes. In the example file they are also red, but they are one the edges in fixed distances."#;
+
+const HELP_SPROCKET_HOLE_DISTANCE_STAFF: &str =
+    r#"This is the distance of the sprocket holes to the staff."#;
+
+const HELP_SPROCKET_HOLE_COLOUR: &str =
+    r#"This is the colour of the sprocket holes. They are Yellow in the example file"#;

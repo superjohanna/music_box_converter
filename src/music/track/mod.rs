@@ -4,9 +4,13 @@ pub mod functions;
 use super::event::Event;
 
 // midly
-use midly::Track as MidiTrack;
+use midly::{Timing, Track as MidiTrack};
 
-#[derive(Debug, Clone, std::default::Default)]
+// std
+use std::default::Default;
+
+/// My representation of a midi track. Contains metadata for calculations.
+#[derive(Debug, Clone, Default)]
 pub struct Track {
     inner: Vec<Event>,
     tick_length: u64,

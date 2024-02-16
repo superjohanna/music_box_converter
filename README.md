@@ -5,7 +5,7 @@
 
 This is a command-line program that converts MIDI files to scores that can be printed for any music box.
 
-If you are unsure of how to create a MIDI file for this program to consume, I recoomend [Musescore](https://musescore.org/), which is a free and open source music notation program that has a MIDI export function.
+If you are unsure of how to create a MIDI file for this program to consume, I recommend [Musescore](https://musescore.org/), which is a free and open source music notation program that has a MIDI export function.
 
 ## Building
 
@@ -61,6 +61,7 @@ There are the following options:
   - -T, --track \<TRACK_NUMBER>&emsp;&emsp;
   Specifies which track from the midi file to use. Zero-based.  
   [default: 0]
+  - -O, --midi-out &emsp; &emsp; &emsp; &emsp; &emsp;&emsp;&emsp;&emsp;When set outputs a midi file with transposed notes on one track and the original track.
   - -t, --transpose &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp;
   Wether to transpose notes that can't normally be played.
   - -v, --verbose... &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp;

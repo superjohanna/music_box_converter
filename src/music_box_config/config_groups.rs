@@ -9,16 +9,16 @@ type Settings = crate::settings::Settings;
 // This is a prefix for items that belong to a group
 const SUB_PREFIX: &str = "\u{2022}"; // • https://www.compart.com/en/unicode/U+2022
 
-/// Just a ```Vec<SettingsGroup>```
+/// Just a `Vec<SettingsGroup>`
 pub type GroupList = Vec<SettingsGroup>;
 
-/// A trait to implement Indexing for ```GroupList```
+/// A trait to implement Indexing for `GroupList`
 pub trait GroupListTrait {
-    /// Finds the index from a name. Returns ```None``` if the item is not found.
+    /// Finds the index from a name. Returns`None` if the item is not found.
     fn index_from_name(&self, name: String) -> Option<usize>;
     /// Finds the length of the longest human readable name of the items
     fn max_length(&self) -> Option<usize>;
-    /// Returns a ```Vec<bool>```, which contains as many members as there are groups and items,
+    /// Returns a `Vec<bool>`, which contains as many members as there are groups and items,
     /// and which denote if the item with this index is a group or an item
     fn get_list_value_type_and_help(&self) -> Vec<(ValueType, String)>;
 }
@@ -98,11 +98,66 @@ pub enum ValueType {
     Number,
     /// The value is a colour
     Colour,
+    /// The value is a bool
+    Boolean,
 }
 
 impl ValueType {
     pub fn is_none(&self) -> bool {
         matches!(self, ValueType::None)
+    }
+}
+
+/// Used to wrap different types so we only have one type
+#[derive(Debug, Clone)]
+pub enum ValueWrapper {
+    String(String),
+    F64(f64),
+    Boolean(bool),
+}
+
+impl ValueWrapper {
+    pub fn self_to_string(&self) -> Option<String> {
+        match self {
+            Self::String(s) => Some(s.to_owned()),
+            _ => None,
+        }
+    }
+
+    pub fn self_to_f64(&self) -> Option<f64> {
+        match self {
+            Self::F64(f) => Some(*f),
+            _ => None,
+        }
+    }
+
+    pub fn self_to_bool(&self) -> Option<bool> {
+        match self {
+            Self::Boolean(b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    pub fn from_string(s: String) -> ValueWrapper {
+        Self::String(s)
+    }
+
+    pub fn from_f64(f: f64) -> ValueWrapper {
+        Self::F64(f)
+    }
+
+    pub fn from_bool(b: bool) -> ValueWrapper {
+        Self::Boolean(b)
+    }
+}
+
+impl ToString for ValueWrapper {
+    fn to_string(&self) -> String {
+        match self {
+            Self::String(s) => s.to_owned(),
+            Self::F64(f) => f.to_string(),
+            Self::Boolean(b) => b.to_string(),
+        }
     }
 }
 
