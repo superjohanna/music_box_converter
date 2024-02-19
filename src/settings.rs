@@ -277,7 +277,7 @@ const HELP_BOUNDING_BOX_LEFT_RIGHT_COLOUR: &str = r#"This is the colour of the l
 // Paper size
 const HELP_PAPER_LENGTH: &str = r#"This is the length of the paper. If the length of the next note exceeds the paper length it will start a new file."#;
 
-const HELP_PAPER_HEIGHT: &str = r#"This setting is currently unused."#;
+const HELP_PAPER_HEIGHT: &str = r#"This setting is checked against the music box strip height and if the strip height exceeds the paper size an error is returned."#;
 
 // Sprocket holes
 const HELP_SPROCKET_ENABLE: &str = r#"This enables or disables the sprocket holes."#;

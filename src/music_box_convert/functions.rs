@@ -216,6 +216,10 @@ impl MusicBoxConvert {
             music_box.vertical_note_distance(),
         );
 
+        if music_box.strip_height_mm >= self.settings.res()?.paper_size_y {
+            return Err(Error::Generic("Music box to large for paper size. Consider changing the paper size in the configurator.".to_string()));
+        }
+
         self.scale = Option::Some(scale_factor);
 
         Ok(())
