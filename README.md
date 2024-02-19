@@ -8,12 +8,12 @@ This is a command-line program that converts MIDI files to scores that can be pr
 If you are unsure of how to create a MIDI file for this program to consume, I recommend [Musescore](https://musescore.org/), which is a free and open source music notation program that has a MIDI export function.
 
 ## Building
+> You can also download a pre-compiled binary and run that over [here](https://github.com/superjohanna/music_box_converter/releases)
 
   - To build this just install rust via the [Rust toolchain installer](https://rustup.rs/)
   - Run 'cargo build --release'
   - The binary will be under './target/release/music_box_converter' (Path might vary depending on the OS)
 
-You can also download a pre-compiled binary and run that.
 
 ## Usage
 
