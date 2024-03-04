@@ -19,10 +19,10 @@ impl SettingsItemList {
         let mut items = SettingsItemList::new();
 
         // Loop over all elements
-        for (group, name, human_name, value_type, help) in Settings::get_items() {
+        for (group, group_help, name, human_name, value_type, help) in Settings::get_items() {
             if !items.iter().any(|x| x.name == group) {
                 // Add a new group if it doesn't exist
-                items.push(SettingsItem::new_group(group));
+                items.push(SettingsItem::new_group(group, group_help));
             }
 
             // Shadowing doesn't work for some reason

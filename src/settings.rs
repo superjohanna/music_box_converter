@@ -123,124 +123,108 @@ impl Settings {
     // Don't forget to add it to the top as well
     /*
     ui_macro_add_item!(
-        self, // This needs to always be self
-        "$Groupname" // This is the name of the group
-        $Fieldname  // Name of the field you added above
-        "$Readablename" // Human readable name
-        $ValueTypeEnum  // Is it a colour or a number?
-        $ValueType  // For example i16
-        // You can repeat the last three to add more items
+        "$Groupname"; // This is the name of the group
+        $Fieldname,  // Name of the field you added above
+        "$Readablename", // Human readable name
+        $ValueTypeEnum,  // Is it a colour or a number or a bool etc.?
+        $HelpString, // A lot of help strings are defined at the bottom
+        // You can repeat the last four to add more items
     )
     */
 
     //Holes
     config_macro_add_item!(
-        self,
-        "Note holes";
+        "Note holes",
+        HELP_NOTE_GROUP;
         note_hole_radius_mm,
         "Note hole radius (mm)",
         ValueType::Number,
-        f64,
         HELP_NOTE_HOLE_RADIUS;
         note_hole_colour,
         "Note hole colour",
         ValueType::Colour,
-        String,
         HELP_NOTE_HOLE_COLOUR;
     );
 
     // Staff general
     config_macro_add_item!(
-        self,
-        "Staff general";
+        "Staff general",
+        HELP_STAFF_GROUP;
         staff_offset_mm,
         "Staff offset (mm)",
         ValueType::Number,
-        f64,
         HELP_STAFF_OFFSET;
     );
 
     // Staff Lines
     config_macro_add_item!(
-        self,
-        "Staff Lines";
+        "Staff Lines",
+        HELP_STAFF_LINE_GROUP;
         staff_line_thickness_mm,
         "Staff line thickness (mm)",
         ValueType::Number,
-        f64,
         HELP_STAFF_LINE_THICKNESS;
         staff_line_colour,
         "Staff line colour",
         ValueType::Colour,
-        String,
         HELP_STAFF_LINE_COLOUR;
     );
 
     // Bounding Box
     config_macro_add_item!(
-        self,
-        "Bounding box";
+        "Bounding box",
+        HELP_BOUNDING_BOX_GROUP;
         staff_bounding_box_thickness_mm,
         "Staff bounding box thickness (mm)",
         ValueType::Number,
-        f64,
         HELP_BOUNDING_BOX_THICKNESS;
         staff_bounding_box_top_bottom_distance_mm,
         "Staff bounding box top/ bottom distance (mm)",
         ValueType::Number,
-        f64,
         HELP_BOUNDING_BOX_TOP_BOTTOM_DISTANCE;
         staff_bounding_box_top_bottom_colour,
         "Staff bounding box top/ bottom colour",
         ValueType::Colour,
-        String,
         HELP_BOUNDING_BOX_TOP_BOTTOM_COLOUR;
         staff_bounding_box_left_right_colour,
         "Staff bounding box left/ right colour",
         ValueType::Colour,
-        String,
         HELP_BOUNDING_BOX_LEFT_RIGHT_COLOUR;
     );
 
     // Paper size
     config_macro_add_item!(
-        self,
-        "Paper size";
+        "Paper size",
+        HELP_PAPER_SIZE_GROUP;
         paper_size_x,
         "Paper length (mm)",
         ValueType::Number,
-        f64,
         HELP_PAPER_LENGTH;
         paper_size_y,
         "Paper height (mm)",
         ValueType::Number,
-        f64,
         HELP_PAPER_HEIGHT;
     );
 
     // Sprocket holes
     config_macro_add_item!(
-        self,
-        "Sprocket holes";
+        "Sprocket holes",
+        HELP_SPROCKET_GROUP;
         sprocket_hole_enable,
         "Sprocket holes enable",
         ValueType::Boolean,
-        bool,
         HELP_SPROCKET_ENABLE;
         sprocket_hole_distance_mm,
         "Sprocket hole distance (mm)",
         ValueType::Number,
-        f64,
         HELP_SPROCKET_HOLE_DISTANCE;
         sprocket_hole_distance_staff_mm,
         "Sprocket hole distance to staff (mm)",
         ValueType::Number,
-        f64,
         HELP_SPROCKET_HOLE_DISTANCE_STAFF;
         sprocket_hole_colour,
         "Sprocket holes colour",
         ValueType::Colour,
-        String,
         HELP_SPROCKET_HOLE_COLOUR;
     );
 }
@@ -248,44 +232,56 @@ impl Settings {
 // Help
 
 // Notes
-const HELP_NOTE_HOLE_RADIUS: &str =
-    r#"This is the radius of the note holes. The red circles in the example file."#;
+const HELP_NOTE_GROUP: &str =
+    r#"These are settings concerning the note holes, the red circles in the example file."#;
 
-const HELP_NOTE_HOLE_COLOUR: &str =
-    r#"This is the colour of the note holes. The red circles in the example file."#;
+const HELP_NOTE_HOLE_RADIUS: &str = r#"This is the radius of the note holes."#;
+
+const HELP_NOTE_HOLE_COLOUR: &str = r#"This is the colour of the note holes."#;
 
 // Staff
+const HELP_STAFF_GROUP: &str = r#"These are general settings concerning the staff."#;
+
 const HELP_STAFF_OFFSET: &str = r#"This is the offset between the top left corner of the file and the corner of the bounding box."#;
 
 // Staff lines
-const HELP_STAFF_LINE_THICKNESS: &str =
-    r#"This is the thickness of the note lines. They are black in the example file. "#;
+const HELP_STAFF_LINE_GROUP: &str =
+    r#"These are settings concerning the staff lines, the black lines in the example file."#;
 
-const HELP_STAFF_LINE_COLOUR: &str =
-    r#"This is the colour of the note lines. They are black in the example file."#;
+const HELP_STAFF_LINE_THICKNESS: &str = r#"This is the thickness of the note lines."#;
+
+const HELP_STAFF_LINE_COLOUR: &str = r#"This is the colour of the note lines."#;
 
 // Bounding box
-const HELP_BOUNDING_BOX_THICKNESS: &str =
-    r#"This is the thickness of the bounding box. They are green and magenta in the example file."#;
+const HELP_BOUNDING_BOX_GROUP: &str = r#"These are settings concerning the bounding box, the green and magenta lines in the example file."#;
 
-const HELP_BOUNDING_BOX_TOP_BOTTOM_DISTANCE: &str = r#"This is the distance of the top and bottom bounding box lines to the staff. They are green in the example file."#;
+const HELP_BOUNDING_BOX_THICKNESS: &str = r#"This is the thickness of the bounding box lines."#;
 
-const HELP_BOUNDING_BOX_TOP_BOTTOM_COLOUR: &str = r#"This is the colour of the top and bottom bounding box lines. In the example file they are green."#;
+const HELP_BOUNDING_BOX_TOP_BOTTOM_DISTANCE: &str =
+    r#"This is the distance of the top and bottom bounding box lines to the staff."#;
 
-const HELP_BOUNDING_BOX_LEFT_RIGHT_COLOUR: &str = r#"This is the colour of the left and right bounding box lines. In the example file they are magenta."#;
+const HELP_BOUNDING_BOX_TOP_BOTTOM_COLOUR: &str =
+    r#"This is the colour of the top and bottom bounding box lines."#;
+
+const HELP_BOUNDING_BOX_LEFT_RIGHT_COLOUR: &str =
+    r#"This is the colour of the left and right bounding box lines."#;
 
 // Paper size
+const HELP_PAPER_SIZE_GROUP: &str = r#"These are settings concerning the paper sizes."#;
+
 const HELP_PAPER_LENGTH: &str = r#"This is the length of the paper. If the length of the next note exceeds the paper length it will start a new file."#;
 
 const HELP_PAPER_HEIGHT: &str = r#"This setting is checked against the music box strip height and if the strip height exceeds the paper size an error is returned."#;
 
 // Sprocket holes
+const HELP_SPROCKET_GROUP: &str =
+    r#"These are settings concerning the sprocket holes, the yellow holes in the example file."#;
+
 const HELP_SPROCKET_ENABLE: &str = r#"This enables or disables the sprocket holes."#;
 
-const HELP_SPROCKET_HOLE_DISTANCE: &str = r#"This is the distance of the centres of two sprocket holes. In the example file they are also red, but they are one the edges in fixed distances."#;
+const HELP_SPROCKET_HOLE_DISTANCE: &str =
+    r#"This is the distance of the centres of two sprocket holes."#;
 
-const HELP_SPROCKET_HOLE_DISTANCE_STAFF: &str =
-    r#"This is the distance of the sprocket holes to the staff."#;
+const HELP_SPROCKET_HOLE_DISTANCE_STAFF: &str = r#"This is the vertical distance of the sprocket holes to the staff (first staff line on the bottom and top, the black ones)."#;
 
-const HELP_SPROCKET_HOLE_COLOUR: &str =
-    r#"This is the colour of the sprocket holes. They are Yellow in the example file"#;
+const HELP_SPROCKET_HOLE_COLOUR: &str = r#"This is the colour of the sprocket holes."#;

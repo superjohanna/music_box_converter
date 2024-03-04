@@ -9,7 +9,7 @@ pub struct SettingsItem {
     pub human_name: String,
     /// The value of the item. See [super::ValueType] for more.
     pub value_type: ValueType,
-    /// The help page of the item
+    /// The help page of the item.
     pub help: String,
 }
 
@@ -18,10 +18,11 @@ impl SettingsItem {
         Default::default()
     }
 
-    pub fn new_group(name: String) -> Self {
+    pub fn new_group(name: String, help: String) -> Self {
         Self {
-            name: name.clone(),
-            human_name: name,
+            human_name: name.clone(),
+            name,
+            help,
             ..Default::default()
         }
     }
