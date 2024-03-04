@@ -11,10 +11,9 @@ pub mod settings;
 pub mod svg_writer;
 pub mod vec2;
 
-use music_box_config::MusicBoxConfig;
-
 // Internal
 use crate::command::get_command;
+use crate::music_box_config::MusicBoxConfig;
 use crate::music_box_convert::MusicBoxConvert;
 use crate::prelude::*;
 

@@ -27,7 +27,7 @@ impl Track {
         // 127 is the number of midi pitches there are
         let mut last_seen = [Option::None; 127];
         // The outer loop over all `TrackEvents`
-        'i: for event in track {
+        for event in track {
             current_time += u64::from(u32::from(event.delta));
 
             // Get the pitch and velocity of the event or continue if something else
@@ -43,6 +43,11 @@ impl Track {
                 } => (key, u7::from(0)),
                 _ => continue,
             };
+
+            // Continue if it is a note off. Don't waste time calculating stuff for a note that will be discarded
+            if vel == 0 {
+                continue;
+            }
 
             let note = Note::from_midi_pitch(pitch);
 
@@ -89,8 +94,8 @@ impl Track {
                 Note::from_midi_pitch(pitch)
             );
 
-            // Distance calculation. If NoteOff or Note hasn't been seen before then ignore
-            if vel != 0 && last_seen[pitch.as_int() as usize].is_some() {
+            // Distance calculation. If Note hasn't been seen before then ignore
+            if last_seen[pitch.as_int() as usize].is_some() {
                 let distance = current_time - last_seen[pitch.as_int() as usize].unwrap();
                 if distance != 0 {
                     output.min_distance = std::cmp::min(distance, output.min_distance);
@@ -103,7 +108,7 @@ impl Track {
                 }
             }
 
-            // Saving that a note has been encountered. If it isn't a NoteOff that is
+            // Saving that a note has been encountered
             if vel != 0 {
                 last_seen[u8::from(pitch) as usize] = Some(current_time);
             }
