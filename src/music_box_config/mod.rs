@@ -18,10 +18,12 @@ use ratatui::{
 
 // Internal
 use self::item_list::settings_item_list::SettingsItemList;
-use crate::settings::Settings;
+use crate::{lang::LangMap, settings::Settings};
 
 #[derive(Debug, Default)]
 pub struct MusicBoxConfig {
+    /// The translation
+    lang_map: LangMap,
     /// Arguments that are passed through.
     args: ArgMatches,
     /// The Terminal we draw to.
@@ -58,7 +60,13 @@ impl MusicBoxConfig {
     pub fn new(args: &ArgMatches) -> Self {
         let list = SettingsItemList::get_items();
         let path = args.get_one::<String>("io_settings").unwrap().clone();
+        let locale = match sys_locale::get_locale() {
+            Some(t) => t,
+            None => "en-GB".to_string(),
+        };
+
         Self {
+            lang_map: LangMap::load_from_fs(&("./lang/".to_string() + &locale + ".json")),
             args: args.clone(),
             settings_item_list: SettingsItemList::get_items(),
             input_buf: "Group. Not editable.".to_string(),

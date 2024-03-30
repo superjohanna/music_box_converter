@@ -2,6 +2,7 @@
 // Modules
 pub mod command;
 pub mod error;
+pub mod lang;
 pub mod music;
 pub mod music_box_config;
 pub mod music_box_convert;
@@ -51,7 +52,7 @@ fn music_box_convert(args: &clap::ArgMatches) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::music_box_convert::MusicBoxConvert;
+    use crate::{music_box_convert::MusicBoxConvert, lang::LangMap};
 
     fn run(args: clap::ArgMatches) -> Vec<String> {
         match match args.subcommand() {
