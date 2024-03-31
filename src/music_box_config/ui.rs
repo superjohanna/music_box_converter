@@ -122,7 +122,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
             Line::from(format!(
-                "{0}{2}{1}{3}'",
+                "{0}{2}{1}{3}",
                 app.lang_map.val_at("capital.saveFailed"),
                 app.path_buf,
                 app.lang_map.val_at("quoteDelimiterOpen"),
@@ -151,7 +151,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
             Line::from(format!(
-                "{0}{2}{1}{3}'",
+                "{0}{2}{1}{3}",
                 app.lang_map.val_at("capital.openFailed"),
                 app.path_buf,
                 app.lang_map.val_at("quoteDelimiterOpen"),
