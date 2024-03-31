@@ -36,6 +36,14 @@ impl LangMap {
             Err(_) => fallback_lang(),
         }
     }
+
+    // Returns the cloned value at key 'key' or 'key' if there is none
+    pub fn val_at(&self, key: &str) -> String {
+        match self.get_key_value(key) {
+            Some(t) => t.1.clone(),
+            None => key.to_owned(),
+        }
+    }
 }
 
 fn fallback_lang() -> LangMap {
