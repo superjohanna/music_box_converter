@@ -195,7 +195,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Open file popup
     if let Some(t) = &app.open_file {
         let block = Block::default()
-            .title(app.lang_map.val_at("Open"))
+            .title(app.lang_map.val_at("capital.open"))
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
         let area = centered_rect_helper(60, 20, f.size());
