@@ -158,5 +158,9 @@
     [
         "capital.moveDown",
         "Move down"
+    ],
+    [
+        "capital.groupBuffer.fullStop",
+        "Groups aren't editable."
     ]
 ]

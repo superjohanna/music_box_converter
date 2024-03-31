@@ -319,7 +319,7 @@ impl MusicBoxConfig {
             self.input_buf = t.to_string();
             return Ok(());
         }
-        self.input_buf = "Group. Not editable".to_string();
+        self.input_buf = self.lang_map.val_at("capital.groupBuffer.fullStop");
         Ok(())
     }
 
