@@ -52,7 +52,7 @@ fn music_box_convert(args: &clap::ArgMatches) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{music_box_convert::MusicBoxConvert, lang::LangMap};
+    use crate::{lang::LangMap, music_box_convert::MusicBoxConvert};
 
     fn run(args: clap::ArgMatches) -> Vec<String> {
         match match args.subcommand() {

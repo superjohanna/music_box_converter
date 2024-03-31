@@ -18,7 +18,7 @@ impl MusicBox {
         self.notes.len()
     }
 
-    /// Gets the index of a [super::Note]. 
+    /// Gets the index of a [super::Note].
     pub fn get_index(&self, note: &Note) -> Option<usize> {
         self.notes.iter().position(|el| *el == *note)
     }
