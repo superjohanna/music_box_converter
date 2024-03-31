@@ -218,29 +218,15 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 }
 
 fn get_tip(app: &MusicBoxConfig) -> Line<'_> {
-    // TODO: Refactor!
-    match app.settings_item_list[app.index].value_type {
-        ValueType::None => Line::from(vec![
-            Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space"))
-                .bold(),
-            Span::from(app.lang_map.val_at("capital.groupHint.fullStop")),
-        ]),
-        ValueType::Number => Line::from(vec![
-            Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space"))
-                .bold(),
-            Span::from(app.lang_map.val_at("capital.floatHint.fullStop")),
-        ]),
-        ValueType::Colour => Line::from(vec![
-            Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space"))
-                .bold(),
-            Span::from(app.lang_map.val_at("capital.colourHint.fullStop")),
-        ]),
-        ValueType::Boolean => Line::from(vec![
-            Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space"))
-                .bold(),
-            Span::from(app.lang_map.val_at("capital.checkboxHint.fullStop")),
-        ]),
-    }
+    Line::from(vec![
+        Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space")),
+        Span::from(match app.settings_item_list[app.index].value_type {
+            ValueType::None => app.lang_map.val_at("capital.groupHint.fullStop"),
+            ValueType::Number => app.lang_map.val_at("capital.floatHint.fullStop"),
+            ValueType::Colour => app.lang_map.val_at("capital.colourHint.fullStop"),
+            ValueType::Boolean => app.lang_map.val_at("capital.checkboxHint.fullStop"),
+        }),
+    ])
 }
 
 #[allow(clippy::type_complexity)]
