@@ -7,6 +7,7 @@ use crate::config_macro_list_items;
 use crate::music_box_config::item_list::value::ValueType;
 use crate::music_box_config::item_list::value::ValueWrapper;
 
+// TODO make add non_exhaustive
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct Settings {
     // Notes
