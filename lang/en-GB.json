@@ -1,10 +1,162 @@
 [
     [
-        "MusicBox",
-        "music box"
+        "colon.space",
+        ": "
     ],
     [
-        "Key",
-        "Val"
+        "quoteDelimiterOpen",
+        "'"
+    ],
+    [
+        "quoteDelimiterClose",
+        "'"
+    ],
+    [
+        "space.seperator.space",
+        " | "
+    ],
+    [
+        "capital.editor",
+        "Editor"
+    ],
+    [
+        "capital.help",
+        "Help"
+    ],
+    [
+        "capital.settings",
+        "Settings"
+    ],
+    [
+        "capital.error",
+        "Error"
+    ],
+    [
+        "capital.save",
+        "Save"
+    ],
+    [
+        "capital.invalidFloat.fullStop",
+        "The value you inputted is not a valid float."
+    ],
+    [
+        "capital.exampleFloat.fullStop",
+        "An Example of a valid float would be any integer ('50') or a two integers seperated by a period ('50.1')."
+    ],
+    [
+        "capital.continue.ellipsis",
+        "Enter to continue..."
+    ],
+    [
+        "capital.saveFailed",
+        "Couldn't save file to "
+    ],
+    [
+        "capital.openFailed",
+        "Couldn't open file "
+    ],
+    [
+        "capital.saveTo",
+        "Saving to"
+    ],
+    [
+        "arrow.space",
+        "-> "
+    ],
+    [
+        "capital.saveHint.fullStop",
+        "Escape to close dialogue. Enter to save."
+    ],
+    [
+        "capital.open",
+        "Open"
+    ],
+    [
+        "capital.openFrom",
+        "Open file"
+    ],
+    [
+        "capital.openHint.fullStop",
+        "Escape to close dialogue. Enter to open."
+    ],
+    [
+        "capital.tip",
+        "Tip"
+    ],
+    [
+        "capital.groupHint.fullStop",
+        "This is a group. Editing it does nothing. It's only here for organization."
+    ],
+    [
+        "capital.floatHint.fullStop",
+        "This is a floating point number. It can be an integer or two integers seperated by a period (50 and 50.0 are the same)."
+    ],
+    [
+        "capital.colourHint.fullStop",
+        "This is a colour. You can use hex notation (#ffffff for white) or rgb notation (rgb(255, 255, 255) for white) or any other svg supported format."
+    ],
+    [
+        "capital.checkboxHint.fullStop",
+        "This is a checkbox. You can toggle it on or off with the spacebar."
+    ],
+    [
+        "capital.title",
+        "Music box configurator"
+    ],
+    [
+        "capital.boolFalse",
+        "Off"
+    ],
+    [
+        "capital.boolTrue",
+        "On"
+    ],
+    [
+        "caret.save",
+        "^S "
+    ],
+    [
+        "capital.save",
+        "Save "
+    ],
+    [
+        "caret.open",
+        "^O "
+    ],
+    [
+        "capital.open",
+        "Open "
+    ],
+    [
+        "caret.exit",
+        "^X "
+    ],
+    [
+        "capital.exit",
+        "Exit "
+    ],
+    [
+        "caret.deleteLine",
+        "^L "
+    ],
+    [
+        "capital.deleteLine",
+        "Delete line "
+    ],
+    [
+        "caret.moveUp",
+        "^E "
+    ],
+    [
+        "capital.moveUp",
+        "Move up"
+    ],
+    [
+        "caret.moveDown",
+        "^D "
+    ],
+    [
+        "capital.moveDown",
+        "Move down"
     ]
 ]

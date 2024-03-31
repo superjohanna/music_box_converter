@@ -9,11 +9,13 @@ use ratatui::{
     Frame,
 };
 
+use crate::music::music_box::MusicBox;
+
 use self::value::ValueType;
 
 // Internal
-use super::MusicBoxConfig;
 use super::item_list::*;
+use super::MusicBoxConfig;
 
 pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Update liststate
@@ -23,8 +25,10 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     app.max_index = app.settings_item_list.len() - 1;
 
     // Chunks
-    let (terminal_chunks, mid_section_chunks, mid_right_chunks) =
-        get_chunks(f.size(), app.settings_item_list.longest_human_readable_name_length);
+    let (terminal_chunks, mid_section_chunks, mid_right_chunks) = get_chunks(
+        f.size(),
+        app.settings_item_list.longest_human_readable_name_length,
+    );
 
     // Block
     let block = Block::default()
@@ -34,13 +38,13 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     // Title
     f.render_widget(
-        get_title().block(block.clone().borders(Borders::BOTTOM)),
+        get_title(app).block(block.clone().borders(Borders::BOTTOM)),
         terminal_chunks[0],
     );
 
     // Editor (The part where text pops up if you press keys).
     f.render_widget(
-        get_editor(app).block(block.clone().title("Editor")),
+        get_editor(app).block(block.clone().title(app.lang_map.val_at("capital.editor"))),
         mid_right_chunks[0],
     );
 
@@ -49,7 +53,8 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     let help = if !app.settings_item_list[app.index].help.is_empty() {
         Line::from(vec![
-            Span::from("Help: ").bold(),
+            Span::from(app.lang_map.val_at("capital.help") + &app.lang_map.val_at("colon.space"))
+                .bold(),
             Span::from(app.settings_item_list[app.index].help.clone()),
         ])
     } else {
@@ -62,7 +67,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     // Navbar
     f.render_widget(
-        get_navbar().block(block.clone().borders(Borders::TOP)),
+        get_navbar(app).block(block.clone().borders(Borders::TOP)),
         terminal_chunks[2],
     );
 
@@ -78,7 +83,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     }
 
     let list = List::new(list)
-        .block(block.clone().title("Settings"))
+        .block(block.clone().title(app.lang_map.val_at("capital.settings")))
         .highlight_symbol(">>");
 
     f.render_stateful_widget(list, mid_section_chunks[0], &mut app.list_state);
@@ -87,15 +92,17 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Shamelessly stolen from https://github.com/fdehau/tui-rs/blob/master/examples/popup.rs
     if app.parse_error {
         let block = Block::default()
-            .title("Error")
+            .title(app.lang_map.val_at("capital.error"))
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
         let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
-            Line::from("The value you inputted is not a valid float."),
-            Line::from("An Example of a valid float would be any integer ('50') or a two integers seperated by a period ('50.1')."),
-            Line::from("Enter to continue..."),
-        ]).block(block).wrap(Wrap { trim: false });
+            Line::from(app.lang_map.val_at("capital.invalidFloat.fullStop")),
+            Line::from(app.lang_map.val_at("capital.exampleFloat.fullStop")),
+            Line::from(app.lang_map.val_at("capital.continue.ellipsis")),
+        ])
+        .block(block)
+        .wrap(Wrap { trim: false });
 
         let area_sub = Layout::default()
             .direction(Direction::Horizontal)
@@ -107,16 +114,24 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     // Save error popup
     if app.save_error.is_some() {
-        let error =  app.save_error.as_ref().unwrap().to_string();
+        let error = app.save_error.as_ref().unwrap().to_string();
         let block = Block::default()
             .title("Error")
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
         let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
-            Line::from(format!("Couldn't save file to '{}'", app.path_buf)),
+            Line::from(format!(
+                "{0}{2}{1}{3}'",
+                app.lang_map.val_at("capital.saveFailed"),
+                app.path_buf,
+                app.lang_map.val_at("quoteDelimiterOpen"),
+                app.lang_map.val_at("quoteDelimiterClose")
+            )),
             Line::from(error),
-        ]).block(block).wrap(Wrap { trim: false });
+        ])
+        .block(block)
+        .wrap(Wrap { trim: false });
 
         let area_sub = Layout::default()
             .direction(Direction::Horizontal)
@@ -128,16 +143,24 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     // Open error popup
     if app.open_error.is_some() {
-        let error =  app.open_error.as_ref().unwrap().to_string();
+        let error = app.open_error.as_ref().unwrap().to_string();
         let block = Block::default()
-            .title("Error")
+            .title(app.lang_map.val_at("capital.error"))
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
         let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
-            Line::from(format!("Couldn't open file '{}'", app.path_buf)),
+            Line::from(format!(
+                "{0}{2}{1}{3}'",
+                app.lang_map.val_at("capital.openFailed"),
+                app.path_buf,
+                app.lang_map.val_at("quoteDelimiterOpen"),
+                app.lang_map.val_at("quoteDelimiterClose")
+            )),
             Line::from(error),
-        ]).block(block).wrap(Wrap { trim: false });
+        ])
+        .block(block)
+        .wrap(Wrap { trim: false });
 
         let area_sub = Layout::default()
             .direction(Direction::Horizontal)
@@ -150,14 +173,14 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Save file popup
     if let Some(t) = &app.save_file {
         let block = Block::default()
-            .title("Save")
+            .title(app.lang_map.val_at("capital.save"))
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
         let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
-            Line::from("Saving to:"),
-            Line::from("->".to_string() + t.as_str()),
-            Line::from("Escape to close dialogue. Enter to save."),
+            Line::from(app.lang_map.val_at("capital.saveTo") + &app.lang_map.val_at("colon.space")),
+            Line::from(app.lang_map.val_at("arrow.space") + t.as_str()),
+            Line::from(app.lang_map.val_at("capital.saveHint")),
         ])
         .block(block)
         .wrap(Wrap { trim: false });
@@ -172,14 +195,16 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Open file popup
     if let Some(t) = &app.open_file {
         let block = Block::default()
-            .title("Open")
+            .title(app.lang_map.val_at("Open"))
             .borders(Borders::ALL)
             .title_alignment(Alignment::Center);
         let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
-            Line::from("Opening:"),
-            Line::from("->".to_string() + t.as_str()),
-            Line::from("Escape to close dialogue. Enter to open."),
+            Line::from(
+                app.lang_map.val_at("capital.openFrom") + &app.lang_map.val_at("colon.space"),
+            ),
+            Line::from(app.lang_map.val_at("arrow.space") + t.as_str()),
+            Line::from(app.lang_map.val_at("capital.openHint.fullStop")),
         ])
         .block(block)
         .wrap(Wrap { trim: false });
@@ -193,32 +218,28 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 }
 
 fn get_tip(app: &MusicBoxConfig) -> Line<'_> {
+    // TODO: Refactor!
     match app.settings_item_list[app.index].value_type {
-        ValueType::None => {
-            Line::from(vec![
-                Span::from("Tip: ").bold(),
-                Span::from("This is a group. Editing it does nothing. It's only here for organization."),
-                ])
-        },
-        ValueType::Number => {
-        
-            Line::from(vec![
-                Span::from("Tip: ").bold(),
-                Span::from("This is a floating point number. It can be an integer or two integers seperated by a period (50 and 50.0 are the same)."),
-                ])
-        },
-        ValueType::Colour => {
-            Line::from(vec![
-                Span::from("Tip: ").bold(),
-                Span::from("This is a colour. You can use hex notation (#ffffff for white) or rgb notation (rgb(255, 255, 255) for white) or any other svg supported format."),
-            ])
-        },
-        ValueType::Boolean => {
-            Line::from(vec![
-                Span::from("Tip: ").bold(),
-                Span::from("This is a checkbox. You can toggle it on or off with the spacebar."),
-            ])
-        },
+        ValueType::None => Line::from(vec![
+            Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space"))
+                .bold(),
+            Span::from(app.lang_map.val_at("capital.groupHint.fullStop")),
+        ]),
+        ValueType::Number => Line::from(vec![
+            Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space"))
+                .bold(),
+            Span::from(app.lang_map.val_at("capital.floatHint.fullStop")),
+        ]),
+        ValueType::Colour => Line::from(vec![
+            Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space"))
+                .bold(),
+            Span::from(app.lang_map.val_at("capital.colourHint.fullStop")),
+        ]),
+        ValueType::Boolean => Line::from(vec![
+            Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space"))
+                .bold(),
+            Span::from(app.lang_map.val_at("capital.checkboxHint.fullStop")),
+        ]),
     }
 }
 
@@ -256,9 +277,12 @@ fn get_chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[R
     (chunks_main, chunks_sub, chunks_sub_sub)
 }
 
-fn get_title() -> Paragraph<'static> {
-    Paragraph::new(Text::styled("Music box configurator", Style::default()))
-        .alignment(Alignment::Center)
+fn get_title(app: &MusicBoxConfig) -> Paragraph<'static> {
+    Paragraph::new(Text::styled(
+        app.lang_map.val_at("capital.title"),
+        Style::default(),
+    ))
+    .alignment(Alignment::Center)
 }
 
 fn get_editor(app: &MusicBoxConfig) -> Paragraph<'_> {
@@ -266,19 +290,37 @@ fn get_editor(app: &MusicBoxConfig) -> Paragraph<'_> {
         ValueType::Boolean => {
             // The windows console can't render the unicode characters I wanted to use ;(
             if &app.input_buf == "false" {
-                Paragraph::new(Text::styled("Off", Style::default()))
+                Paragraph::new(Text::from(app.lang_map.val_at("capital.boolFalse")))
             } else {
-                Paragraph::new(Text::styled("On", Style::default()))
+                Paragraph::new(Text::from(app.lang_map.val_at("capital.boolTrue")))
             }
-        },
-        _ => Paragraph::new(Text::styled(&app.input_buf, Style::default())),
+        }
+        _ => Paragraph::new(Text::from(app.input_buf.clone())),
     }
 }
 
-fn get_navbar() -> Paragraph<'static> {
+fn get_navbar(app: &MusicBoxConfig) -> Paragraph<'static> {
     Paragraph::new(vec![
-        Line::from("^S Save | ^O Open | ^X eXit"),
-        Line::from("^L delete Line | ^E move up | ^D move down"),
+        Line::from(format!(
+            "{1}{2}{0}{3}{4}{0}{5}{6}",
+            app.lang_map.val_at("space.seperator.space"),
+            app.lang_map.val_at("caret.save"),
+            app.lang_map.val_at("capital.save"),
+            app.lang_map.val_at("caret.open"),
+            app.lang_map.val_at("capital.open"),
+            app.lang_map.val_at("caret.exit"),
+            app.lang_map.val_at("capital.exit"),
+        )),
+        Line::from(format!(
+            "{1}{2}{0}{3}{4}{0}{5}{6}",
+            app.lang_map.val_at("space.seperator.space"),
+            app.lang_map.val_at("caret.deleteLine"),
+            app.lang_map.val_at("capital.deleteLine"),
+            app.lang_map.val_at("caret.moveUp"),
+            app.lang_map.val_at("capital.moveUp"),
+            app.lang_map.val_at("caret.moveDown"),
+            app.lang_map.val_at("capital.moveDown"),
+        )),
     ])
     .alignment(Alignment::Center)
 }
