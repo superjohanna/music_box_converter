@@ -41,7 +41,7 @@ impl LangMap {
     pub fn val_at(&self, key: &str) -> String {
         match self.get_key_value(key) {
             Some(t) => t.1.clone(),
-            None => key.to_owned(),
+            None => format!("({})", key.to_owned()),
         }
     }
 }
