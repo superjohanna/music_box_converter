@@ -59,20 +59,21 @@ pub struct MusicBoxConfig {
 impl MusicBoxConfig {
     pub fn new(args: &ArgMatches) -> Self {
         let list = SettingsItemList::get_items();
-        let path = args.get_one::<String>("io_settings").unwrap().clone();
+        let path_buf = args.get_one::<String>("io_settings").unwrap().clone();
         let locale = match sys_locale::get_locale() {
             Some(t) => t,
             None => "en-GB".to_string(),
         };
+        let lang_map = LangMap::load_from_fs(&("./lang/".to_string() + &locale + ".json"));
 
         Self {
-            lang_map: LangMap::load_from_fs(&("./lang/".to_string() + &locale + ".json")),
+            input_buf: lang_map.val_at("capital.groupBuffer.fullStop"),
+            lang_map,
             args: args.clone(),
             settings_item_list: SettingsItemList::get_items(),
-            input_buf: "Group. Not editable.".to_string(),
             list_state: ListState::default().with_selected(Some(0usize)),
-            path_buf: path.clone(),
-            open_file: Some(path),
+            open_file: Some(path_buf.clone()),
+            path_buf,
             ..Default::default()
         }
     }
