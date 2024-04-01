@@ -92,7 +92,7 @@ impl MusicBoxConvert {
         let file = match File::open(self.args.get_one::<String>("io_box").unwrap()) {
             Ok(t) => t,
             Err(e) => {
-                return Err(Error::IOError(
+                return Err(Error::Io(
                     Box::new(e),
                     Box::new(self.args.get_one::<String>("io_box").unwrap().to_string()),
                 ))
@@ -101,7 +101,7 @@ impl MusicBoxConvert {
 
         let deserialized: MusicBox = match serde_json::from_reader(BufReader::new(file)) {
             Ok(t) => t,
-            Err(e) => return Err(Error::SerdeJsonError(Box::new(e))),
+            Err(e) => return Err(Error::SerdeJson(Box::new(e))),
         };
 
         self.music_box = Some(deserialized);
@@ -113,7 +113,7 @@ impl MusicBoxConvert {
         let file = match File::open(self.args.get_one::<String>("io_settings").unwrap()) {
             Ok(t) => t,
             Err(e) => {
-                return Err(Error::IOError(
+                return Err(Error::Io(
                     Box::new(e),
                     Box::new(self.args.get_one::<String>("io_settings").unwrap().clone()),
                 ))
@@ -122,7 +122,7 @@ impl MusicBoxConvert {
 
         let deserialized: Settings = match serde_json::from_reader(BufReader::new(file)) {
             Ok(t) => t,
-            Err(e) => return Err(Error::SerdeJsonError(Box::new(e))),
+            Err(e) => return Err(Error::SerdeJson(Box::new(e))),
         };
 
         self.settings = Some(deserialized);
@@ -141,12 +141,12 @@ impl MusicBoxConvert {
 
         let mut file: Vec<u8> = match std::fs::read(input.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(input))),
+            Err(e) => return Err(Error::Io(Box::new(e), Box::new(input))),
         };
 
         let smf: Smf = match Smf::parse(&file) {
             Ok(t) => t,
-            Err(e) => return Err(Error::MidiError(Box::new(e))),
+            Err(e) => return Err(Error::Midi(Box::new(e))),
         };
 
         if track_number > smf.tracks.len() - 1 {
@@ -173,7 +173,7 @@ impl MusicBoxConvert {
         if let Some(t) = self.args.get_one::<String>("io_out_midi") {
             let mut abs_path = match crate::path::absolute_path(t) {
                 Ok(t) => t,
-                Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
+                Err(e) => return Err(Error::Io(Box::new(e), Box::new(t.clone()))),
             };
 
             let parent = abs_path.parent();
@@ -187,7 +187,7 @@ impl MusicBoxConvert {
 
             let mut file = match File::create(abs_path) {
                 Ok(t) => t,
-                Err(e) => return Err(Error::IOError(Box::new(e), Box::new(t.clone()))),
+                Err(e) => return Err(Error::Io(Box::new(e), Box::new(t.clone()))),
             };
 
             let track = self
@@ -506,12 +506,12 @@ impl MusicBoxConvert {
         let mut path_string = self.args.get_one::<String>("io_out").unwrap().to_owned();
         let mut abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
+            Err(e) => return Err(Error::Io(Box::new(e), Box::new(path_string))),
         };
 
         match std::fs::create_dir_all(abs_path.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
+            Err(e) => return Err(Error::Io(Box::new(e), Box::new(path_string))),
         }
 
         for (i, svg) in self.svg.iter().enumerate() {

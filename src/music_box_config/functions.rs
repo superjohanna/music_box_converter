@@ -22,10 +22,22 @@ use serde::{Serialize, Serializer};
 // Internal
 use super::{
     item_list::value::{ValueType, ValueWrapper},
+    state::{ApplicationState, KeyPressEvent},
     ui::ui,
-    MusicBoxConfig,
+    ExlusiveBuffers, MusicBoxConfig,
 };
 use crate::{prelude::*, settings::Settings};
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub enum MainLoopAction {
+    /// Something changed. Don't skip to next loop iteration
+    #[default]
+    Nothing,
+    /// Nothing's changed. Skip to the next loop, don't redraw
+    Continue,
+    /// Break the loop, exiting the program
+    Break,
+}
 
 impl MusicBoxConfig {
     pub fn run(&mut self) -> Result<()> {
@@ -34,11 +46,11 @@ impl MusicBoxConfig {
         let mut terminal = Terminal::new(CrosstermBackend::new(stdout())).to_res()?;
         terminal.clear().to_res()?;
 
-        if let Err(e) = self.open() {
-            self.open_error = Some(Box::new(e));
-            self.open_file = None;
-            self.popup = true;
-        }
+        // Act as if the user is trying to open a file
+        self.buffers.exlusive_buffer = ExlusiveBuffers::OpenFile(self.buffers.path_buffer.clone());
+        self.state = ApplicationState::OpenDialogue;
+        self.key_press_event = KeyPressEvent::Enter;
+        self.change_state();
         self.main_loop(&mut terminal);
 
         stdout().execute(LeaveAlternateScreen).to_res()?;
@@ -48,229 +60,38 @@ impl MusicBoxConfig {
 
     fn main_loop(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
         loop {
+            // Calculate the sizes and check if we need to draw
+            let size_changed = false;
             terminal
                 .draw(|frame| {
                     ui(frame, self);
                 })
                 .to_res()?;
 
-            // I'm sorry about the level of indentation. I'll refactor it later. Hopefully if let chaining becomes stable soon
+            // Read key and parse it to better format
             if event::poll(std::time::Duration::from_millis(100)).to_res()? {
                 if let Event::Key(key) = event::read().to_res()? {
-                    if !(key.kind == KeyEventKind::Press) {
-                        continue;
-                    }
-                    if key.modifiers == KeyModifiers::CONTROL {
-                        match key.code {
-                            KeyCode::Char('x') => {
-                                if !self.popup {
-                                    break;
-                                }
-                                self.save_file = None;
-                                self.open_file = None;
-                                self.parse_error = false;
-                                if self.open_error.is_some() {
-                                    self.settings = Some(Settings::default());
-                                }
-                                self.open_error = None;
-                                self.save_error = None;
-                                self.popup = false;
-                            }
-                            KeyCode::Char('l') => {
-                                if self.popup {
-                                    continue;
-                                }
-                                if self.settings_item_list[self.index].value_type
-                                    == ValueType::Boolean
-                                {
-                                    self.input_buf = "false".to_string();
-                                    continue;
-                                }
-                                self.input_buf = String::new();
-                            }
-                            KeyCode::Char('s') => {
-                                if self.popup {
-                                    continue;
-                                }
-                                self.save_file = Some(self.path_buf.clone());
-                                self.popup = true;
-                            }
-                            KeyCode::Char('o') => {
-                                if self.popup {
-                                    continue;
-                                }
-                                self.open_file = Some(self.path_buf.clone());
-                                self.popup = true;
-                            }
-                            KeyCode::Char('e') => {
-                                if self.index != 0 {
-                                    if self.update_settings_index(true).is_err() {
-                                        continue;
-                                    }
-                                    self.index -= 1;
-                                }
-                            }
-                            KeyCode::Char('d') => {
-                                if self.index != self.max_index {
-                                    if self.update_settings_index(false).is_err() {
-                                        continue;
-                                    }
-                                    self.index += 1;
-                                }
-                            }
-                            _ => (),
-                        }
-                    } else if key.modifiers == KeyModifiers::SHIFT {
-                        match key.code {
-                            KeyCode::Char(c) => {
-                                if self.popup {
-                                    continue;
-                                }
-                                if self.settings_item_list[self.index].value_type
-                                    == ValueType::Boolean
-                                {
-                                    if c == ' ' {
-                                        if &self.input_buf == "true" {
-                                            self.input_buf = "false".to_string()
-                                        } else {
-                                            self.input_buf = "true".to_string()
-                                        }
-                                    }
-                                    continue;
-                                }
-                                if let Some(t) = &mut self.save_file {
-                                    t.push(c);
-                                } else if let Some(t) = &mut self.open_file {
-                                    t.push(c);
-                                } else {
-                                    self.input_buf += &c.to_uppercase().collect::<String>();
-                                }
-                            }
-                            KeyCode::Backspace => {
-                                if self.popup {
-                                    continue;
-                                }
-                                if let Some(t) = &mut self.save_file {
-                                    t.pop().res();
-                                } else if let Some(t) = &mut self.open_file {
-                                    t.pop();
-                                } else {
-                                    self.input_buf.pop();
-                                }
-                            }
-                            _ => continue,
-                        }
-                    } else if key.modifiers == KeyModifiers::NONE {
-                        match key.code {
-                            KeyCode::Char(c) => {
-                                if self.popup {
-                                    continue;
-                                }
-                                if self.settings_item_list[self.index].value_type
-                                    == ValueType::Boolean
-                                {
-                                    if c == ' ' {
-                                        if &self.input_buf == "true" {
-                                            self.input_buf = "false".to_string()
-                                        } else {
-                                            self.input_buf = "true".to_string()
-                                        }
-                                    }
-                                    continue;
-                                }
-                                if let Some(t) = &mut self.save_file {
-                                    t.push(c);
-                                } else if let Some(t) = &mut self.open_file {
-                                    t.push(c);
-                                } else {
-                                    self.input_buf.push(c);
-                                }
-                            }
-                            KeyCode::Backspace => {
-                                if self.parse_error {
-                                    continue;
-                                }
-                                if let Some(t) = &mut self.save_file {
-                                    t.pop();
-                                } else if let Some(t) = &mut self.open_file {
-                                    t.pop();
-                                } else {
-                                    self.input_buf.pop();
-                                }
-                            }
-                            KeyCode::Enter => {
-                                if !self.popup {
-                                    continue;
-                                }
-                                if self.parse_error {
-                                    self.parse_error = false;
-                                }
-                                if self.save_error.is_some() {
-                                    self.save_error = None;
-                                }
-                                if self.open_error.is_some() {
-                                    self.settings = Some(Settings::default());
-                                    self.open_error = None;
-                                }
-                                if let Some(t) = &self.save_file {
-                                    self.path_buf = t.clone();
-                                    self.save_current_setting();
-                                    if let Err(e) = self.save() {
-                                        self.save_error = Some(Box::new(e));
-                                        self.save_file = None;
-                                        continue;
-                                    };
-                                }
-                                if let Some(t) = &self.open_file {
-                                    self.path_buf = t.clone();
-                                    if let Err(e) = self.open() {
-                                        self.open_error = Some(Box::new(e));
-                                        self.open_file = None;
-                                        continue;
-                                    };
-                                    self.load_current_setting();
-                                }
-                                self.popup = false;
-                            }
-                            KeyCode::Up => {
-                                if self.index != 0 {
-                                    if self.update_settings_index(true).is_err() {
-                                        continue;
-                                    }
-                                    self.index -= 1;
-                                    continue;
-                                }
-                            }
-                            KeyCode::Down => {
-                                if self.index != self.max_index {
-                                    if self.update_settings_index(false).is_err() {
-                                        continue;
-                                    }
-                                    self.index += 1;
-                                    continue;
-                                }
-                            }
-                            KeyCode::Esc => {
-                                self.parse_error = false;
-                                self.save_file = None;
-                                self.open_file = None;
-                                if self.open_error.is_some() {
-                                    self.settings = Some(Settings::default());
-                                }
-                                self.open_error = None;
-                                self.save_error = None;
-                                self.popup = false;
-                            }
-                            _ => continue,
-                        }
-                    }
+                    self.handle_key(&key)
                 }
+            };
+
+            // Act on the key
+            if !size_changed {
+                match self.change_state() {
+                    MainLoopAction::Nothing => (),
+                    MainLoopAction::Continue => continue,
+                    MainLoopAction::Break => break,
+                }
+            } else {
+                self.change_state();
             }
+
+            // Draw ui
         }
         Ok(())
     }
 
-    /// For updating the settings_index in a direction. Loads stuff into the input_buffer for example.
+    /* /// For updating the settings_index in a direction. Loads stuff into the input_buffer for example.
     fn update_settings_index(&mut self, negative: bool) -> Result<()> {
         // Check if popup
         if self.popup {
@@ -370,17 +191,17 @@ impl MusicBoxConfig {
         let path_string = self.open_file.clone().unwrap();
         let abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
+            Err(e) => return Err(Error::Io(Box::new(e), Box::new(path_string))),
         };
 
         let file = match File::open(abs_path) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
+            Err(e) => return Err(Error::Io(Box::new(e), Box::new(path_string))),
         };
 
         let deserialized: Settings = match serde_json::from_reader(BufReader::new(file)) {
             Ok(t) => t,
-            Err(e) => return Err(Error::SerdeJsonError(Box::new(e))),
+            Err(e) => return Err(Error::SerdeJson(Box::new(e))),
         };
 
         self.settings = Some(deserialized);
@@ -395,7 +216,7 @@ impl MusicBoxConfig {
         let mut path_string = self.path_buf.clone();
         let mut abs_path = match crate::path::absolute_path(path_string.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::IOError(Box::new(e), Box::new(path_string))),
+            Err(e) => return Err(Error::Io(Box::new(e), Box::new(path_string))),
         };
 
         let parent = abs_path.parent();
@@ -411,7 +232,7 @@ impl MusicBoxConfig {
 
         let j = match serde_json::to_string_pretty(self.settings.res()?) {
             Ok(t) => t,
-            Err(e) => return Err(Error::SerdeJsonError(Box::new(e))),
+            Err(e) => return Err(Error::SerdeJson(Box::new(e))),
         };
 
         file.write_all(j.as_bytes());
@@ -419,5 +240,5 @@ impl MusicBoxConfig {
         self.save_file = None;
 
         Ok(())
-    }
+    } */
 }

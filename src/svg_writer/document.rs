@@ -58,7 +58,7 @@ impl Document {
         let mut file = match File::create(path) {
             Ok(t) => t,
             Err(e) => {
-                return Err(Error::IOError(
+                return Err(Error::Io(
                     Box::new(e),
                     Box::new(path.to_string_lossy().to_string()),
                 ))
@@ -68,7 +68,7 @@ impl Document {
         match file.write_all(self.print().as_bytes()) {
             Ok(t) => (),
             Err(e) => {
-                return Err(Error::IOError(
+                return Err(Error::Io(
                     Box::new(e),
                     Box::new(path.to_string_lossy().to_string()),
                 ))

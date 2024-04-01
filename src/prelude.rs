@@ -16,7 +16,7 @@ impl<T> FromError<T> for Result<T> {
     fn from_io(res: std::io::Result<T>) -> Result<T> {
         match res {
             Ok(t) => Ok(t),
-            Err(e) => Err(Error::IOError(
+            Err(e) => Err(Error::Io(
                 Box::new(e),
                 Box::new("This io error was converted".to_string()),
             )),
@@ -26,14 +26,14 @@ impl<T> FromError<T> for Result<T> {
     fn from_serde_json(res: serde_json::Result<T>) -> Result<T> {
         match res {
             Ok(t) => Ok(t),
-            Err(e) => Err(Error::SerdeJsonError(Box::new(e))),
+            Err(e) => Err(Error::SerdeJson(Box::new(e))),
         }
     }
 
     fn from_midi(res: midly::Result<T>) -> Result<T> {
         match res {
             Ok(t) => Ok(t),
-            Err(e) => Err(Error::MidiError(Box::new(e))),
+            Err(e) => Err(Error::Midi(Box::new(e))),
         }
     }
 }

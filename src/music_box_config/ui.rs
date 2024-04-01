@@ -14,15 +14,12 @@ use crate::music::music_box::MusicBox;
 use self::value::ValueType;
 
 // Internal
-use super::item_list::*;
 use super::MusicBoxConfig;
+use super::{item_list::*, state::ApplicationState};
 
 pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     // Update liststate
     app.list_state.select(Some(app.index));
-
-    // Set the maximum length which is used for the key input.
-    app.max_index = app.settings_item_list.len() - 1;
 
     // Chunks
     let (terminal_chunks, mid_section_chunks, mid_right_chunks) = get_chunks(
@@ -88,9 +85,9 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
 
     f.render_stateful_widget(list, mid_section_chunks[0], &mut app.list_state);
 
-    // Check for popup
+    // Parse error popup
     // Shamelessly stolen from https://github.com/fdehau/tui-rs/blob/master/examples/popup.rs
-    if app.parse_error {
+    if app.state == ApplicationState::ParseErrorFloat {
         let block = Block::default()
             .title(app.lang_map.val_at("capital.error"))
             .borders(Borders::ALL)
@@ -113,8 +110,8 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     }
 
     // Save error popup
-    if app.save_error.is_some() {
-        let error = app.save_error.as_ref().unwrap().to_string();
+    if app.state == ApplicationState::SaveError {
+        let error = app.buffers.error_buffer.to_string();
         let block = Block::default()
             .title("Error")
             .borders(Borders::ALL)
@@ -124,7 +121,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             Line::from(format!(
                 "{0}{2}{1}{3}",
                 app.lang_map.val_at("capital.saveFailed"),
-                app.path_buf,
+                app.buffers.editor_buffer,
                 app.lang_map.val_at("quoteDelimiterOpen"),
                 app.lang_map.val_at("quoteDelimiterClose")
             )),
@@ -142,8 +139,8 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     }
 
     // Open error popup
-    if app.open_error.is_some() {
-        let error = app.open_error.as_ref().unwrap().to_string();
+    if app.state == ApplicationState::OpenError {
+        let error = app.buffers.error_buffer.to_string();
         let block = Block::default()
             .title(app.lang_map.val_at("capital.error"))
             .borders(Borders::ALL)
@@ -153,7 +150,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             Line::from(format!(
                 "{0}{2}{1}{3}",
                 app.lang_map.val_at("capital.openFailed"),
-                app.path_buf,
+                app.buffers.editor_buffer,
                 app.lang_map.val_at("quoteDelimiterOpen"),
                 app.lang_map.val_at("quoteDelimiterClose")
             )),
@@ -171,7 +168,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     }
 
     // Save file popup
-    if let Some(t) = &app.save_file {
+    if app.state == ApplicationState::SaveDialogue {
         let block = Block::default()
             .title(app.lang_map.val_at("capital.save"))
             .borders(Borders::ALL)
@@ -179,7 +176,9 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
         let area = centered_rect_helper(60, 20, f.size());
         let pop_text = Paragraph::new(vec![
             Line::from(app.lang_map.val_at("capital.saveTo") + &app.lang_map.val_at("colon.space")),
-            Line::from(app.lang_map.val_at("arrow.space") + t.as_str()),
+            Line::from(
+                app.lang_map.val_at("arrow.space") + app.buffers.exlusive_buffer.as_ref().unwrap(),
+            ),
             Line::from(app.lang_map.val_at("capital.saveHint")),
         ])
         .block(block)
@@ -193,7 +192,7 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
     }
 
     // Open file popup
-    if let Some(t) = &app.open_file {
+    if app.state == ApplicationState::OpenDialogue {
         let block = Block::default()
             .title(app.lang_map.val_at("capital.open"))
             .borders(Borders::ALL)
@@ -203,7 +202,9 @@ pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
             Line::from(
                 app.lang_map.val_at("capital.openFrom") + &app.lang_map.val_at("colon.space"),
             ),
-            Line::from(app.lang_map.val_at("arrow.space") + t.as_str()),
+            Line::from(
+                app.lang_map.val_at("arrow.space") + app.buffers.exlusive_buffer.as_ref().unwrap(),
+            ),
             Line::from(app.lang_map.val_at("capital.openHint.fullStop")),
         ])
         .block(block)
@@ -275,13 +276,13 @@ fn get_editor(app: &MusicBoxConfig) -> Paragraph<'_> {
     match app.settings_item_list[app.index].value_type {
         ValueType::Boolean => {
             // The windows console can't render the unicode characters I wanted to use ;(
-            if &app.input_buf == "false" {
+            if &app.buffers.editor_buffer == "false" {
                 Paragraph::new(Text::from(app.lang_map.val_at("capital.boolFalse")))
             } else {
                 Paragraph::new(Text::from(app.lang_map.val_at("capital.boolTrue")))
             }
         }
-        _ => Paragraph::new(Text::from(app.input_buf.clone())),
+        _ => Paragraph::new(Text::from(app.buffers.editor_buffer.clone())),
     }
 }
 

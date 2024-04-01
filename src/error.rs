@@ -9,11 +9,13 @@ pub enum Error {
     Generic(String),
     #[error("Internal Error: {0}")]
     Internal(String),
+    #[error("{0}")]
+    Displayable(String),
 
     #[error("IO Error: {0}")]
-    IOError(Box<io::Error>, Box<String>),
+    Io(Box<io::Error>, Box<String>),
     #[error("Serialization Error: {0}")]
-    SerdeJsonError(Box<serde_json::Error>),
+    SerdeJson(Box<serde_json::Error>),
     #[error("Midi Error: {0}")]
-    MidiError(Box<midly::Error>),
+    Midi(Box<midly::Error>),
 }
