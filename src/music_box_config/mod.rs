@@ -19,10 +19,8 @@ use ratatui::{
 };
 
 // Internal
-use self::{
-    item_list::settings_item_list::SettingsItemList,
-    state::{ApplicationState, KeyPressEvent},
-};
+use self::key_handler::KeyPressEvent;
+use self::{item_list::settings_item_list::SettingsItemList, state::ApplicationState};
 use crate::prelude::*;
 use crate::{lang::LangMap, settings::Settings};
 
