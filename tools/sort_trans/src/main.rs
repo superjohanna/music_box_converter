@@ -13,6 +13,7 @@ fn main() {
     let iter = std::fs::read_dir(PATH).unwrap();
     for entry in iter {
         let unwrapped = entry.unwrap();
+        println!("found file at '{}'", unwrapped.path().display());
         let file = std::fs::File::open(unwrapped.path()).unwrap();
 
         let mut list: List = serde_json::from_reader(file).unwrap();
