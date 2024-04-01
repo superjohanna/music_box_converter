@@ -41,7 +41,7 @@
     ],
     [
         "capital.exampleFloat.fullStop",
-        "An Example of a valid float would be any integer ('50') or a two integers seperated by a period ('50.1')."
+        "An Example of a valid float would be any integer ('50') or two integers seperated by a full stop ('50.1')."
     ],
     [
         "capital.continue.ellipsis",
@@ -89,7 +89,7 @@
     ],
     [
         "capital.floatHint.fullStop",
-        "This is a floating point number. It can be an integer or two integers seperated by a period (50 and 50.0 are the same)."
+        "This is a floating point number. It can be any integer ('50') or two integers seperated by a full stop ('50.1'). (50 and 50.0 are the same)."
     ],
     [
         "capital.colourHint.fullStop",
@@ -162,5 +162,9 @@
     [
         "capital.groupBuffer.fullStop",
         "Groups aren't editable."
+    ],
+    [
+        "capital.invalidBool",
+        "Bool Error. Please report. Value not saved"
     ]
 ]
