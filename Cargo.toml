@@ -19,3 +19,5 @@ crossterm = "0.27.0"
 paste = "1.0.14"
 serde_with = "3.7.0"
 sys-locale = "0.3.1"
+reflect = { path = "tools/reflect/" }
+reflect_derive = { path = "tools/reflect/reflect_derive/" }
