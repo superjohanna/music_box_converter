@@ -34,7 +34,7 @@ fn main() -> Result<()> {
 
     match result {
         Ok(t) => (),
-        Err(e) => error!("{:?}", e),
+        Err(e) => println!("{}", e),
     }
 
     Ok(())

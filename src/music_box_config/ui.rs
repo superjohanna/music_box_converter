@@ -1,339 +1,213 @@
-use std::rc::Rc;
-
 // ratatui
 use ratatui::{
-    layout::{self, Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Style, Stylize},
+    layout::Alignment,
+    style::{Style, Stylize},
+    symbols::line::DOUBLE_VERTICAL_LEFT,
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Widget, Wrap},
     Frame,
 };
 
-use crate::music::music_box::MusicBox;
-
-use self::value::ValueType;
-
 // Internal
-use super::MusicBoxConfig;
-use super::{item_list::*, state::ApplicationState};
+use super::{item_list::value::ValueType, state::ApplicationState, MusicBoxConfig};
+use crate::prelude::*;
 
-pub fn ui(f: &mut Frame, app: &mut MusicBoxConfig) {
-    // Update liststate
-    app.list_state.select(Some(app.index));
+const DEFAULT_BLOCK: Block = Block::new()
+    .borders(Borders::ALL)
+    .style(Style::new())
+    .border_type(BorderType::Rounded);
 
-    // Chunks
-    let (terminal_chunks, mid_section_chunks, mid_right_chunks) = get_chunks(
-        f.size(),
-        app.settings_item_list.longest_human_readable_name_length,
-    );
+const NO_TRIM: Wrap = Wrap { trim: false };
 
-    // Block
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .style(Style::default())
-        .border_type(BorderType::Rounded);
+impl MusicBoxConfig {
+    pub fn ui(&mut self, frame: &mut Frame) -> Result<()> {
+        self.list_state.select(Some(self.index));
 
-    // Title
-    f.render_widget(
-        get_title(app).block(block.clone().borders(Borders::BOTTOM)),
-        terminal_chunks[0],
-    );
+        // Render Title
+        frame.render_widget(self.title(), self.area.res()?.terminal_chunks[0]);
 
-    // Editor (The part where text pops up if you press keys).
-    f.render_widget(
-        get_editor(app).block(block.clone().title(app.lang_map.val_at("capital.editor"))),
-        mid_right_chunks[0],
-    );
+        // Render Editor (The part where text pops up if you press a key)
+        frame.render_widget(self.editor(), self.area.res()?.editor_chunks[0]);
 
-    // Tip
-    let tip = get_tip(app);
+        // Render Tip & Help
+        frame.render_widget(self.tip_and_help(), self.area.res()?.editor_chunks[1]);
 
-    let help = if !app.settings_item_list[app.index].help.is_empty() {
-        Line::from(vec![
-            Span::from(app.lang_map.val_at("capital.help") + &app.lang_map.val_at("colon.space"))
-                .bold(),
-            Span::from(app.settings_item_list[app.index].help.clone()),
-        ])
-    } else {
-        Line::from("")
-    };
+        // Render Navbar
+        frame.render_widget(self.navbar(), self.area.res()?.terminal_chunks[2]);
 
-    let tip_and_help = Paragraph::new(vec![tip, Line::from(""), help]);
+        // Render Settings
+        let list: Vec<ListItem> = self
+            .settings_item_list
+            .iter()
+            .map(|item| {
+                if matches!(item.value_type, ValueType::None) {
+                    ListItem::new(item.human_name.to_owned()).bold()
+                } else {
+                    ListItem::new(item.human_name.to_owned())
+                }
+            })
+            .collect();
 
-    f.render_widget(tip_and_help.wrap(Wrap { trim: false }), mid_right_chunks[1]);
+        let list = List::new(list).block(DEFAULT_BLOCK).highlight_symbol(">>");
 
-    // Navbar
-    f.render_widget(
-        get_navbar(app).block(block.clone().borders(Borders::TOP)),
-        terminal_chunks[2],
-    );
+        frame.render_stateful_widget(list, self.area.res()?.main_chunks[0], &mut self.list_state);
 
-    // Settings
-    let mut list = Vec::<ListItem>::new();
+        // Popup
+        self.popup(frame);
 
-    for item in app.settings_item_list.iter() {
-        if let ValueType::None = item.value_type {
-            list.push(ListItem::new(item.human_name.clone()).bold())
-        } else {
-            list.push(ListItem::new(item.human_name.clone()));
-        }
+        Ok(())
     }
 
-    let list = List::new(list)
-        .block(block.clone().title(app.lang_map.val_at("capital.settings")))
-        .highlight_symbol(">>");
-
-    f.render_stateful_widget(list, mid_section_chunks[0], &mut app.list_state);
-
-    // Parse error popup
-    // Shamelessly stolen from https://github.com/fdehau/tui-rs/blob/master/examples/popup.rs
-    if app.state == ApplicationState::ParseErrorFloat {
-        let block = Block::default()
-            .title(app.lang_map.val_at("capital.error"))
-            .borders(Borders::ALL)
-            .title_alignment(Alignment::Center);
-        let area = centered_rect_helper(60, 20, f.size());
-        let pop_text = Paragraph::new(vec![
-            Line::from(app.lang_map.val_at("capital.invalidFloat.fullStop")),
-            Line::from(app.lang_map.val_at("capital.exampleFloat.fullStop")),
-            Line::from(app.lang_map.val_at("capital.continue.ellipsis")),
-        ])
-        .block(block)
-        .wrap(Wrap { trim: false });
-
-        let area_sub = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Min(1), Constraint::Max(1)])
-            .split(area);
-        f.render_widget(Clear, area);
-        f.render_widget(pop_text, area);
+    fn title(&self) -> Paragraph {
+        Paragraph::new(Text::styled(
+            self.lang_map.val_at("capital.title"),
+            Style::default(),
+        ))
+        .alignment(Alignment::Center)
+        .block(DEFAULT_BLOCK.borders(Borders::BOTTOM))
     }
 
-    // Save error popup
-    if app.state == ApplicationState::SaveError {
-        let error = app.buffers.error_buffer.to_string();
-        let block = Block::default()
-            .title("Error")
-            .borders(Borders::ALL)
-            .title_alignment(Alignment::Center);
-        let area = centered_rect_helper(60, 20, f.size());
-        let pop_text = Paragraph::new(vec![
-            Line::from(format!(
-                "{0}{2}{1}{3}",
-                app.lang_map.val_at("capital.saveFailed"),
-                app.buffers.editor_buffer,
-                app.lang_map.val_at("quoteDelimiterOpen"),
-                app.lang_map.val_at("quoteDelimiterClose")
-            )),
-            Line::from(error),
-        ])
-        .block(block)
-        .wrap(Wrap { trim: false });
-
-        let area_sub = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Min(1), Constraint::Max(1)])
-            .split(area);
-        f.render_widget(Clear, area);
-        f.render_widget(pop_text, area);
-    }
-
-    // Open error popup
-    if app.state == ApplicationState::OpenError {
-        let error = app.buffers.error_buffer.to_string();
-        let block = Block::default()
-            .title(app.lang_map.val_at("capital.error"))
-            .borders(Borders::ALL)
-            .title_alignment(Alignment::Center);
-        let area = centered_rect_helper(60, 20, f.size());
-        let pop_text = Paragraph::new(vec![
-            Line::from(format!(
-                "{0}{2}{1}{3}",
-                app.lang_map.val_at("capital.openFailed"),
-                app.buffers.editor_buffer,
-                app.lang_map.val_at("quoteDelimiterOpen"),
-                app.lang_map.val_at("quoteDelimiterClose")
-            )),
-            Line::from(error),
-        ])
-        .block(block)
-        .wrap(Wrap { trim: false });
-
-        let area_sub = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Min(1), Constraint::Max(1)])
-            .split(area);
-        f.render_widget(Clear, area);
-        f.render_widget(pop_text, area);
-    }
-
-    // Save file popup
-    if app.state == ApplicationState::SaveDialogue {
-        let block = Block::default()
-            .title(app.lang_map.val_at("capital.save"))
-            .borders(Borders::ALL)
-            .title_alignment(Alignment::Center);
-        let area = centered_rect_helper(60, 20, f.size());
-        let pop_text = Paragraph::new(vec![
-            Line::from(app.lang_map.val_at("capital.saveTo") + &app.lang_map.val_at("colon.space")),
-            Line::from(
-                app.lang_map.val_at("arrow.space") + app.buffers.exlusive_buffer.as_ref().unwrap(),
-            ),
-            Line::from(app.lang_map.val_at("capital.saveHint")),
-        ])
-        .block(block)
-        .wrap(Wrap { trim: false });
-        let area_sub = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Min(1), Constraint::Max(1)])
-            .split(area);
-        f.render_widget(Clear, area);
-        f.render_widget(pop_text, area);
-    }
-
-    // Open file popup
-    if app.state == ApplicationState::OpenDialogue {
-        let block = Block::default()
-            .title(app.lang_map.val_at("capital.open"))
-            .borders(Borders::ALL)
-            .title_alignment(Alignment::Center);
-        let area = centered_rect_helper(60, 20, f.size());
-        let pop_text = Paragraph::new(vec![
-            Line::from(
-                app.lang_map.val_at("capital.openFrom") + &app.lang_map.val_at("colon.space"),
-            ),
-            Line::from(
-                app.lang_map.val_at("arrow.space") + app.buffers.exlusive_buffer.as_ref().unwrap(),
-            ),
-            Line::from(app.lang_map.val_at("capital.openHint.fullStop")),
-        ])
-        .block(block)
-        .wrap(Wrap { trim: false });
-        let area_sub = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Min(1), Constraint::Max(1)])
-            .split(area);
-        f.render_widget(Clear, area);
-        f.render_widget(pop_text, area);
-    }
-}
-
-fn get_tip(app: &MusicBoxConfig) -> Line<'_> {
-    Line::from(vec![
-        Span::from(app.lang_map.val_at("capital.tip") + &app.lang_map.val_at("colon.space")),
-        Span::from(match app.settings_item_list[app.index].value_type {
-            ValueType::None => app.lang_map.val_at("capital.groupHint.fullStop"),
-            ValueType::Number => app.lang_map.val_at("capital.floatHint.fullStop"),
-            ValueType::Colour => app.lang_map.val_at("capital.colourHint.fullStop"),
-            ValueType::Boolean => app.lang_map.val_at("capital.checkboxHint.fullStop"),
-        }),
-    ])
-}
-
-#[allow(clippy::type_complexity)]
-fn get_chunks(a: Rect, max_char_length: usize) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]>) {
-    let chunks_main = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Max(2), Constraint::Min(1), Constraint::Max(3)])
-        .split(a);
-
-    let chunks_sub = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            // Plus two for the borders and two extra for the list selection symbol '>>'
-            Constraint::Max(max_char_length as u16 + 4u16),
-            Constraint::Min(1),
-        ])
-        .split(chunks_main[1]);
-
-    let mut chunks_sub_sub = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Max(3), Constraint::Min(1)])
-        .split(chunks_sub[1]);
-
-    // You may be asking what this is. Good question
-    // Basically we want to make a little space to the left of chunks_sub_sub[1] but Rc<[Rect]> doesn't implement DerefMut so we create a new one
-    let chunks_sub_sub = Rc::new([
-        chunks_sub_sub[0],
-        Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Max(1), Constraint::Min(1)])
-            .split(chunks_sub_sub[1])[1],
-    ]);
-
-    (chunks_main, chunks_sub, chunks_sub_sub)
-}
-
-fn get_title(app: &MusicBoxConfig) -> Paragraph<'static> {
-    Paragraph::new(Text::styled(
-        app.lang_map.val_at("capital.title"),
-        Style::default(),
-    ))
-    .alignment(Alignment::Center)
-}
-
-fn get_editor(app: &MusicBoxConfig) -> Paragraph<'_> {
-    match app.settings_item_list[app.index].value_type {
-        ValueType::Boolean => {
-            // The windows console can't render the unicode characters I wanted to use ;(
-            if &app.buffers.editor_buffer == "false" {
-                Paragraph::new(Text::from(app.lang_map.val_at("capital.boolFalse")))
-            } else {
-                Paragraph::new(Text::from(app.lang_map.val_at("capital.boolTrue")))
+    fn editor(&self) -> Paragraph {
+        match self.settings_item_list[self.index].value_type {
+            ValueType::Boolean => {
+                // The windows console can't render the unicode characters I wanted to use ;(
+                if &self.buffers.editor_buffer == "true" {
+                    Paragraph::new(Text::from(self.lang_map.val_at("capital.boolTrue")))
+                } else {
+                    Paragraph::new(Text::from(self.lang_map.val_at("capital.boolFalse")))
+                }
             }
+            _ => Paragraph::new(Text::from(self.buffers.editor_buffer.clone())),
         }
-        _ => Paragraph::new(Text::from(app.buffers.editor_buffer.clone())),
+        .block(DEFAULT_BLOCK.title(self.lang_map.val_at("capital.editor")))
     }
-}
 
-fn get_navbar(app: &MusicBoxConfig) -> Paragraph<'static> {
-    Paragraph::new(vec![
-        Line::from(format!(
-            "{1}{2}{0}{3}{4}{0}{5}{6}",
-            app.lang_map.val_at("space.seperator.space"),
-            app.lang_map.val_at("caret.save"),
-            app.lang_map.val_at("capital.save"),
-            app.lang_map.val_at("caret.open"),
-            app.lang_map.val_at("capital.open"),
-            app.lang_map.val_at("caret.exit"),
-            app.lang_map.val_at("capital.exit"),
-        )),
-        Line::from(format!(
-            "{1}{2}{0}{3}{4}{0}{5}{6}",
-            app.lang_map.val_at("space.seperator.space"),
-            app.lang_map.val_at("caret.deleteLine"),
-            app.lang_map.val_at("capital.deleteLine"),
-            app.lang_map.val_at("caret.moveUp"),
-            app.lang_map.val_at("capital.moveUp"),
-            app.lang_map.val_at("caret.moveDown"),
-            app.lang_map.val_at("capital.moveDown"),
-        )),
-    ])
-    .alignment(Alignment::Center)
-}
+    fn tip_and_help(&self) -> Paragraph {
+        let tip = Line::from(vec![
+            Span::from(self.lang_map.val_at("capital.tip") + &self.lang_map.val_at("colon.space")),
+            Span::from(match self.settings_item_list[self.index].value_type {
+                ValueType::None => self.lang_map.val_at("capital.groupHint.fullStop"),
+                ValueType::Number => self.lang_map.val_at("capital.floatHint.fullStop"),
+                ValueType::Colour => self.lang_map.val_at("capital.colourHint.fullStop"),
+                ValueType::Boolean => self.lang_map.val_at("capital.checkboxHint.fullStop"),
+            }),
+        ]);
 
-fn centered_rect_helper(x: u16, y: u16, r: Rect) -> Rect {
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Percentage((100 - y) / 2),
-                Constraint::Percentage(y),
-                Constraint::Percentage((100 - y) / 2),
-            ]
-            .as_ref(),
-        )
-        .split(r);
+        let help = if !self.settings_item_list[self.index].help.is_empty() {
+            Line::from(vec![
+                Span::from(
+                    self.lang_map.val_at("capital.help") + &self.lang_map.val_at("colon.space"),
+                )
+                .bold(),
+                Span::from(self.settings_item_list[self.index].help.clone()),
+            ])
+        } else {
+            Line::from("")
+        };
 
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage((100 - x) / 2),
-                Constraint::Percentage(x),
-                Constraint::Percentage((100 - x) / 2),
-            ]
-            .as_ref(),
-        )
-        .split(popup_layout[1])[1]
+        Paragraph::new(vec![tip, Line::from(""), help])
+            .wrap(NO_TRIM)
+            .block(DEFAULT_BLOCK.borders(Borders::NONE))
+    }
+
+    fn navbar(&self) -> Paragraph {
+        Paragraph::new(vec![
+            Line::from(format!(
+                "{1}{2}{0}{3}{4}{0}{5}{6}",
+                self.lang_map.val_at("space.seperator.space"),
+                self.lang_map.val_at("caret.save"),
+                self.lang_map.val_at("capital.save"),
+                self.lang_map.val_at("caret.open"),
+                self.lang_map.val_at("capital.open"),
+                self.lang_map.val_at("caret.exit"),
+                self.lang_map.val_at("capital.exit"),
+            )),
+            Line::from(format!(
+                "{1}{2}{0}{3}{4}{0}{5}{6}",
+                self.lang_map.val_at("space.seperator.space"),
+                self.lang_map.val_at("caret.deleteLine"),
+                self.lang_map.val_at("capital.deleteLine"),
+                self.lang_map.val_at("caret.moveUp"),
+                self.lang_map.val_at("capital.moveUp"),
+                self.lang_map.val_at("caret.moveDown"),
+                self.lang_map.val_at("capital.moveDown"),
+            )),
+        ])
+        .alignment(Alignment::Center)
+        .block(DEFAULT_BLOCK.borders(Borders::TOP))
+    }
+
+    fn popup(&self, frame: &mut Frame) -> Result<()> {
+        let pop_text = Paragraph::new(match self.state {
+            ApplicationState::GeneralError => vec![
+                Line::from(
+                    self.lang_map.val_at("capital.error") + &self.lang_map.val_at("colon.space"),
+                ),
+                Line::from(self.buffers.error_buffer.to_string()),
+            ],
+            ApplicationState::OpenError => vec![
+                Line::from(format!(
+                    "{0}{2}{1}{3}",
+                    self.lang_map.val_at("capital.openFailed"),
+                    match &self.buffers.exlusive_buffer {
+                        super::ExlusiveBuffers::OpenFile(string) => string.clone(),
+                        _ => "".to_string(),
+                    },
+                    self.lang_map.val_at("quoteDelimiterOpen"),
+                    self.lang_map.val_at("quoteDelimiterClose")
+                )),
+                Line::from(self.buffers.error_buffer.to_string()),
+            ],
+            ApplicationState::SaveError => vec![
+                Line::from(format!(
+                    "{0}{2}{1}{3}",
+                    self.lang_map.val_at("capital.saveFailed"),
+                    match &self.buffers.exlusive_buffer {
+                        super::ExlusiveBuffers::SaveFile(string) => string.clone(),
+                        _ => "".to_string(),
+                    },
+                    self.lang_map.val_at("quoteDelimiterOpen"),
+                    self.lang_map.val_at("quoteDelimiterClose")
+                )),
+                Line::from(self.buffers.error_buffer.to_string()),
+            ],
+            ApplicationState::ParseErrorFloat => vec![
+                Line::from(self.lang_map.val_at("capital.invalidFloat.fullStop")),
+                Line::from(self.lang_map.val_at("capital.exampleFloat.fullStop")),
+                Line::from(self.lang_map.val_at("capital.continue.ellipsis")),
+            ],
+            ApplicationState::ParseErrorBool => vec![
+                Line::from(self.lang_map.val_at("capital.invalidBool.fullStop")),
+                Line::from(self.lang_map.val_at("capital.continue.ellipsis")),
+            ],
+            ApplicationState::OpenDialogue => vec![
+                Line::from(
+                    self.lang_map.val_at("capital.openFrom") + &self.lang_map.val_at("colon.space"),
+                ),
+                Line::from(
+                    self.lang_map.val_at("arrow.space")
+                        + self.buffers.exlusive_buffer.as_ref().unwrap(),
+                ),
+                Line::from(self.lang_map.val_at("capital.openHint.fullStop")),
+            ],
+            ApplicationState::SaveDialogue => vec![
+                Line::from(
+                    self.lang_map.val_at("capital.saveTo") + &self.lang_map.val_at("colon.space"),
+                ),
+                Line::from(
+                    self.lang_map.val_at("arrow.space")
+                        + self.buffers.exlusive_buffer.as_ref().unwrap(),
+                ),
+                Line::from(self.lang_map.val_at("capital.saveHint")),
+            ],
+            _ => return Ok(()),
+        })
+        .block(DEFAULT_BLOCK)
+        .wrap(NO_TRIM);
+
+        frame.render_widget(Clear, *self.area.res()?.popup_chunk);
+        frame.render_widget(pop_text, *self.area.res()?.popup_chunk);
+
+        Ok(())
+    }
 }

@@ -4,7 +4,7 @@
         {
             "type": "shell",
             "label": "cargo build",
-            "command": "~/.cargo/bin/cargo build",
+            "command": "cargo build",
             "problemMatcher": [
                 "$rustc"
             ],

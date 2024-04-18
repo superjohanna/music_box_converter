@@ -1,4 +1,3 @@
-use reflect_derive::Reflect;
 // serde_derive
 use serde_derive::{Deserialize, Serialize};
 
@@ -8,7 +7,7 @@ use crate::config_macro_list_items;
 use crate::music_box_config::item_list::value::ValueType;
 use crate::music_box_config::item_list::value::ValueWrapper;
 
-#[derive(Clone, Debug, Deserialize, Serialize, Default, Reflect)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[non_exhaustive]
 pub struct Settings {
     // Notes

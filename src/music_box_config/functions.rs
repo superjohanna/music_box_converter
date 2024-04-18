@@ -20,8 +20,8 @@ use ratatui::{
 use serde::{Serialize, Serializer};
 
 // Internal
-use super::key_handler::KeyPressEvent;
-use super::{state::ApplicationState, ui::ui, ExlusiveBuffers, MusicBoxConfig};
+use super::{area::Areas, key_handler::KeyPressEvent};
+use super::{state::ApplicationState, ui_old::ui_old, ExlusiveBuffers, MusicBoxConfig};
 use crate::{prelude::*, settings::Settings};
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -47,42 +47,72 @@ impl MusicBoxConfig {
         self.state = ApplicationState::OpenDialogue;
         self.key_press_event = KeyPressEvent::Enter;
         self.change_state();
-        self.main_loop(&mut terminal);
+        let result = self.main_loop(&mut terminal);
 
         stdout().execute(LeaveAlternateScreen).to_res()?;
         disable_raw_mode().to_res()?;
+        result?;
         Ok(())
     }
 
     fn main_loop(&mut self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
         loop {
-            // Calculate the sizes and check if we need to draw
-            let size_changed = false;
-            terminal
-                .draw(|frame| {
-                    ui(frame, self);
-                })
-                .to_res()?;
+            // Not using terminal.draw instead doing everything it does manually
+            // Also copying comments
 
-            // Read key and parse it to a better format
+            // -- Read key and parse it to a better format --
             if event::poll(std::time::Duration::from_millis(100)).to_res()? {
                 if let Event::Key(key) = event::read().to_res()? {
                     self.handle_key(&key)
                 }
             };
 
-            // Act on the key
-            if !size_changed {
-                match self.change_state() {
+            // -- Calculate the sizes and check if we need to redraw --
+
+            // Autoresize - otherwise we get glitches if shrinking or potential desync between widgets
+            // and the terminal (if growing), which may OOB.
+            terminal.autoresize().to_res()?;
+
+            let mut frame = terminal.get_frame();
+
+            let size = frame.size();
+            let area_old = self.area.clone();
+            self.area = Some(
+                match Areas::split_area(
+                    size,
+                    self.settings_item_list.longest_human_readable_name_length,
+                ) {
+                    Ok(t) => t,
+                    Err(Error::TerminalTooSmall) => {
+                        return Err(Error::Generic(self.lang_map.val_at("terminalTooSmall")))
+                    }
+                    _ => panic!("Unhandled Error"),
+                },
+            );
+
+            // Old area and new area are equal which means the terminal didn't change size
+            let no_change = self.area == area_old;
+
+            // -- Act on the key --
+            let action = self.change_state();
+
+            // Check if there was a state change if there was no size change
+            if no_change {
+                match action {
                     MainLoopAction::Nothing => (),
                     MainLoopAction::Continue => continue,
                     MainLoopAction::Break => break,
                 }
-            } else {
-                self.change_state();
             }
 
             // Draw UI
+            self.ui(&mut frame);
+            terminal.flush();
+
+            terminal.hide_cursor();
+
+            terminal.swap_buffers();
+            terminal.backend_mut().flush();
         }
         Ok(())
     }

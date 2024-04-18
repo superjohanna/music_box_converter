@@ -120,7 +120,7 @@ impl MusicBoxConfig {
 
         if let Some(t) = next_wrapper {
             self.buffers.editor_buffer = t.to_string();
-            return CONTINUE;
+            return NOTHING;
         }
 
         self.buffers.editor_buffer = self.lang_map.val_at("capital.groupBuffer.fullStop");
@@ -143,7 +143,7 @@ impl MusicBoxConfig {
 
         if let Some(t) = next_wrapper {
             self.buffers.editor_buffer = t.to_string();
-            return CONTINUE;
+            return NOTHING;
         }
 
         self.buffers.editor_buffer = self.lang_map.val_at("capital.groupBuffer.fullStop");
@@ -256,11 +256,15 @@ impl MusicBoxConfig {
         match self.state {
             ApplicationState::Default => (),
             ApplicationState::OpenDialogue => {
-                self.cs_open_file();
+                if self.cs_open_file() != CONTINUE {
+                    return NOTHING;
+                };
                 self.state = ApplicationState::Default;
             }
             ApplicationState::SaveDialogue => {
-                self.cs_save_file();
+                if self.cs_save_file() != CONTINUE {
+                    return NOTHING;
+                };
                 self.state = ApplicationState::Default;
             }
             _ => {

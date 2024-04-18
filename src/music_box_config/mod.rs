@@ -1,9 +1,11 @@
+pub mod area;
 pub mod command;
 pub mod config_macro;
 pub mod functions;
 pub mod item_list;
 pub mod key_handler;
 pub mod state;
+pub mod ui_old;
 pub mod ui;
 
 use std::{default, io::Stdout, ops::Deref};
@@ -19,7 +21,7 @@ use ratatui::{
 };
 
 // Internal
-use self::key_handler::KeyPressEvent;
+use self::{area::Areas, key_handler::KeyPressEvent};
 use self::{item_list::settings_item_list::SettingsItemList, state::ApplicationState};
 use crate::prelude::*;
 use crate::{lang::LangMap, settings::Settings};
@@ -62,7 +64,7 @@ pub struct Buffers {
     pub path_buffer: String,
     /// Holds various varients of exlusive buffers e.g. open file, save file buffer or none
     pub exlusive_buffer: ExlusiveBuffers,
-    /// Holds an error for a variety of popups. This should have a none value until an error occurs, at which point it should keep that error even if the execution continues.
+    /// Holds an error for a variety of popups. This has an uninitialized error until a real error occurs.
     pub error_buffer: Box<dyn std::error::Error>,
 }
 
@@ -85,10 +87,12 @@ pub struct MusicBoxConfig {
     key_press_event: KeyPressEvent,
     /// The current state of the application e.g. what to render
     state: ApplicationState,
-    /// Various buffer see [Buffers]
+    /// Various buffers see [Buffers]
     buffers: Buffers,
+    /// The Rects that split up the area of the terminal
+    area: Option<Areas>,
 
-    /// The translation
+    /// The translation map
     lang_map: LangMap,
     /// Arguments that are passed through.
     args: ArgMatches,

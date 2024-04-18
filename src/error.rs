@@ -12,6 +12,9 @@ pub enum Error {
     #[error("{0}")]
     Displayable(String),
 
+    #[error("")]
+    TerminalTooSmall,
+
     #[error("IO Error: {0}")]
     Io(Box<io::Error>, Box<String>),
     #[error("Serialization Error: {0}")]

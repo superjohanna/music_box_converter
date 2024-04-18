@@ -60,8 +60,8 @@
     "Help"
   ],
   [
-    "capital.invalidBool",
-    "Bool Error. Please report. Value not saved"
+    "capital.invalidBool.fullStop",
+    "Bool Error. Please report. Value not saved."
   ],
   [
     "capital.invalidFloat.fullStop",
@@ -166,5 +166,9 @@
   [
     "space.seperator.space",
     " | "
+  ],
+  [
+    "terminalTooSmall",
+    "The terminal is too small. Please make it bigger."
   ]
 ]
