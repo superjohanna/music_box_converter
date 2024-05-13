@@ -84,7 +84,10 @@ impl MusicBoxConfig {
 
     fn tip_and_help(&self) -> Paragraph {
         let tip = Line::from(vec![
-            Span::from(self.lang_map.val_at("capital.tip") + &self.lang_map.val_at("colon.space")),
+            Span::from(
+                self.lang_map.val_at("capital.tip").to_owned()
+                    + self.lang_map.val_at("colon.space"),
+            ),
             Span::from(match self.settings_item_list[self.index].value_type {
                 ValueType::None => self.lang_map.val_at("capital.groupHint.fullStop"),
                 ValueType::Number => self.lang_map.val_at("capital.floatHint.fullStop"),
@@ -96,7 +99,8 @@ impl MusicBoxConfig {
         let help = if !self.settings_item_list[self.index].help.is_empty() {
             Line::from(vec![
                 Span::from(
-                    self.lang_map.val_at("capital.help") + &self.lang_map.val_at("colon.space"),
+                    self.lang_map.val_at("capital.help").to_owned()
+                        + self.lang_map.val_at("colon.space"),
                 )
                 .bold(),
                 Span::from(self.settings_item_list[self.index].help.clone()),
@@ -115,21 +119,21 @@ impl MusicBoxConfig {
             Line::from(format!(
                 "{1}{2}{0}{3}{4}{0}{5}{6}",
                 self.lang_map.val_at("space.seperator.space"),
-                self.lang_map.val_at("caret.save"),
+                self.lang_map.val_at("caret.save.space"),
                 self.lang_map.val_at("capital.save"),
-                self.lang_map.val_at("caret.open"),
+                self.lang_map.val_at("caret.open.space"),
                 self.lang_map.val_at("capital.open"),
-                self.lang_map.val_at("caret.exit"),
-                self.lang_map.val_at("capital.exit"),
+                self.lang_map.val_at("caret.exit.space"),
+                self.lang_map.val_at("capital.exit.space"),
             )),
             Line::from(format!(
                 "{1}{2}{0}{3}{4}{0}{5}{6}",
                 self.lang_map.val_at("space.seperator.space"),
-                self.lang_map.val_at("caret.deleteLine"),
-                self.lang_map.val_at("capital.deleteLine"),
-                self.lang_map.val_at("caret.moveUp"),
+                self.lang_map.val_at("caret.deleteLine.space"),
+                self.lang_map.val_at("capital.deleteLine.space"),
+                self.lang_map.val_at("caret.moveUp.space"),
                 self.lang_map.val_at("capital.moveUp"),
-                self.lang_map.val_at("caret.moveDown"),
+                self.lang_map.val_at("caret.moveDown.space"),
                 self.lang_map.val_at("capital.moveDown"),
             )),
         ])
@@ -141,14 +145,15 @@ impl MusicBoxConfig {
         let pop_text = Paragraph::new(match self.state {
             ApplicationState::GeneralError => vec![
                 Line::from(
-                    self.lang_map.val_at("capital.error") + &self.lang_map.val_at("colon.space"),
+                    self.lang_map.val_at("capital.error").to_owned()
+                        + self.lang_map.val_at("colon.space"),
                 ),
                 Line::from(self.buffers.error_buffer.to_string()),
             ],
             ApplicationState::OpenError => vec![
                 Line::from(format!(
                     "{0}{2}{1}{3}",
-                    self.lang_map.val_at("capital.openFailed"),
+                    self.lang_map.val_at("capital.openFailed.space"),
                     match &self.buffers.exlusive_buffer {
                         super::ExlusiveBuffers::OpenFile(string) => string.clone(),
                         _ => "".to_string(),
@@ -161,7 +166,7 @@ impl MusicBoxConfig {
             ApplicationState::SaveError => vec![
                 Line::from(format!(
                     "{0}{2}{1}{3}",
-                    self.lang_map.val_at("capital.saveFailed"),
+                    self.lang_map.val_at("capital.saveFailed.space"),
                     match &self.buffers.exlusive_buffer {
                         super::ExlusiveBuffers::SaveFile(string) => string.clone(),
                         _ => "".to_string(),
@@ -182,20 +187,22 @@ impl MusicBoxConfig {
             ],
             ApplicationState::OpenDialogue => vec![
                 Line::from(
-                    self.lang_map.val_at("capital.openFrom") + &self.lang_map.val_at("colon.space"),
+                    self.lang_map.val_at("capital.openFrom").to_owned()
+                        + self.lang_map.val_at("colon.space"),
                 ),
                 Line::from(
-                    self.lang_map.val_at("arrow.space")
+                    self.lang_map.val_at("arrow.space").to_owned()
                         + self.buffers.exlusive_buffer.as_ref().unwrap(),
                 ),
                 Line::from(self.lang_map.val_at("capital.openHint.fullStop")),
             ],
             ApplicationState::SaveDialogue => vec![
                 Line::from(
-                    self.lang_map.val_at("capital.saveTo") + &self.lang_map.val_at("colon.space"),
+                    self.lang_map.val_at("capital.saveTo").to_owned()
+                        + self.lang_map.val_at("colon.space"),
                 ),
                 Line::from(
-                    self.lang_map.val_at("arrow.space")
+                    self.lang_map.val_at("arrow.space").to_owned()
                         + self.buffers.exlusive_buffer.as_ref().unwrap(),
                 ),
                 Line::from(self.lang_map.val_at("capital.saveHint")),

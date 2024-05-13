@@ -131,20 +131,20 @@ impl MusicBoxConvert {
 
     /// Stores an absolute representation of the midi data in self.track. Also output a midi file including all track plus an extra one containing the possibly transposed track.
     fn get_abs(&mut self) -> Result<()> {
-        let mut input = self.args.get_one::<String>("io_in").unwrap().to_owned();
+        let mut input_path = self.args.get_one::<String>("io_in").unwrap().to_owned();
         let track_number = self.args.get_one::<usize>("track").unwrap().to_owned();
-        let transpose = self.args.get_flag("transpose");
+        let transpose_flag = self.args.get_flag("transpose");
 
-        if input.chars().collect::<Vec<char>>()[0] == ' ' {
-            input.remove(0);
+        if input_path.chars().collect::<Vec<char>>()[0] == ' ' {
+            input_path.remove(0);
         }
 
-        let mut file: Vec<u8> = match std::fs::read(input.clone()) {
+        let mut midi_file: Vec<u8> = match std::fs::read(input_path.clone()) {
             Ok(t) => t,
-            Err(e) => return Err(Error::Io(Box::new(e), Box::new(input))),
+            Err(e) => return Err(Error::Io(Box::new(e), Box::new(input_path))),
         };
 
-        let smf: Smf = match Smf::parse(&file) {
+        let smf: Smf = match Smf::parse(&midi_file) {
             Ok(t) => t,
             Err(e) => return Err(Error::Midi(Box::new(e))),
         };
@@ -160,7 +160,7 @@ impl MusicBoxConvert {
         self.track = Some(Track::from_midi_track(
             smf.tracks[track_number].clone(),
             self.music_box.res()?,
-            &transpose,
+            &transpose_flag,
         ));
 
         if self.track.res()?.len() < 2 {

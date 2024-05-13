@@ -21,7 +21,7 @@ use serde::{Serialize, Serializer};
 
 // Internal
 use super::{area::Areas, key_handler::KeyPressEvent};
-use super::{state::ApplicationState, ui_old::ui_old, ExlusiveBuffers, MusicBoxConfig};
+use super::{state::ApplicationState, ExlusiveBuffers, MusicBoxConfig};
 use crate::{prelude::*, settings::Settings};
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -84,7 +84,9 @@ impl MusicBoxConfig {
                 ) {
                     Ok(t) => t,
                     Err(Error::TerminalTooSmall) => {
-                        return Err(Error::Generic(self.lang_map.val_at("terminalTooSmall")))
+                        return Err(Error::Generic(
+                            self.lang_map.val_at("terminalTooSmall").to_owned(),
+                        ))
                     }
                     _ => panic!("Unhandled Error"),
                 },

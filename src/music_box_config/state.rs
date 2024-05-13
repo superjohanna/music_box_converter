@@ -123,7 +123,10 @@ impl MusicBoxConfig {
             return NOTHING;
         }
 
-        self.buffers.editor_buffer = self.lang_map.val_at("capital.groupBuffer.fullStop");
+        self.buffers.editor_buffer = self
+            .lang_map
+            .val_at("capital.groupBuffer.fullStop")
+            .to_owned();
         NOTHING
     }
 
@@ -146,7 +149,10 @@ impl MusicBoxConfig {
             return NOTHING;
         }
 
-        self.buffers.editor_buffer = self.lang_map.val_at("capital.groupBuffer.fullStop");
+        self.buffers.editor_buffer = self
+            .lang_map
+            .val_at("capital.groupBuffer.fullStop")
+            .to_owned();
         NOTHING
     }
 
@@ -154,7 +160,20 @@ impl MusicBoxConfig {
     fn cs_char(&mut self, character: char) -> MainLoopAction {
         match self.state {
             ApplicationState::Default => {
-                self.buffers.editor_buffer.push(character);
+                if self.settings_item_list.items[self.index].value_type == ValueType::Boolean
+                    && character == ' '
+                {
+                    self.buffers.editor_buffer = match self.buffers.editor_buffer.as_str() {
+                        "true" => "false".to_string(),
+                        "false" => "true".to_string(),
+                        _ => {
+                            self.state = ApplicationState::ParseErrorBool;
+                            return NOTHING;
+                        }
+                    }
+                } else {
+                    self.buffers.editor_buffer.push(character);
+                }
                 NOTHING
             }
             ApplicationState::OpenDialogue => {
@@ -278,7 +297,7 @@ impl MusicBoxConfig {
     #[inline]
     fn cs_escape(&mut self) -> MainLoopAction {
         self.state = ApplicationState::Default;
-        CONTINUE
+        NOTHING
     }
 
     /// Writes the currently selected option to [MusicBoxConfig::settings]

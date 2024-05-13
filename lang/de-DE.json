@@ -5,127 +5,127 @@
   ],
   [
     "capital.boolFalse",
-    "Off"
+    "Aus"
   ],
   [
     "capital.boolTrue",
-    "On"
+    "An"
   ],
   [
     "capital.checkboxHint.fullStop",
-    "This is a checkbox. You can toggle it on or off with the spacebar."
+    "Dies ist ein Binärzustandsschalter. Sie können diese mit der Leertaste an oder aus schalten."
   ],
   [
     "capital.colourHint.fullStop",
-    "This is a colour. You can use hex notation (#ffffff for white) or rgb notation (rgb(255, 255, 255) for white) or any other svg supported format."
+    "Dies ist eine Farbe. Sie können hex notation (#ffffff für Weiß) oder rgb notation (rgb(255, 255, 255) für Weiß) oder ein anderes svg unterstütztes Format nutzten."
   ],
   [
     "capital.continue.ellipsis",
-    "Enter to continue..."
+    "Eingabetaste drücken zum fortfahren..."
   ],
   [
     "capital.deleteLine.space",
-    "Delete line "
+    "Zeile löschen "
   ],
   [
     "capital.editor",
-    "Editor"
+    "Bearbeitungsfeld"
   ],
   [
     "capital.error",
-    "Error"
+    "Fehler"
   ],
   [
     "capital.exampleFloat.fullStop",
-    "An Example of a valid float would be any integer ('50') or two integers seperated by a full stop ('50.1')."
+    "Ein Beipsiel für eine Gleitkommazahl wäre jeder Ganzzahlwert ('50') oder zwei Ganzzahlwerte mit einem Punkt getrennt ('50.1')."
   ],
   [
     "capital.exit.space",
-    "Exit "
+    "Verlassen "
   ],
   [
     "capital.floatHint.fullStop",
-    "This is a floating point number. It can be any integer ('50') or two integers seperated by a full stop ('50.1'). (50 and 50.0 are the same)."
+    "Dies ist eine Gleitkommazahl. Sie kann jeder Ganzzahlwert ('50') oder zwei Ganzzahlwerte mit einem Punkt getrennt sein ('50.1')."
   ],
   [
     "capital.groupBuffer.fullStop",
-    "Groups aren't editable."
+    "Gruppen sind nicht bearbeitbar."
   ],
   [
     "capital.groupHint.fullStop",
-    "This is a group. Editing it does nothing. It's only here for organization."
+    "Dies ist eine Gruppe. Sie zu bearbeiten macht nichts. Sie existiert nur zur Organisation."
   ],
   [
     "capital.help",
-    "Help"
+    "Hilfe"
   ],
   [
     "capital.invalidBool.fullStop",
-    "Bool Error. Please report. Value not saved."
+    "Falscher Binärzustand. Bitte melden. Wert nicht gespeichert."
   ],
   [
     "capital.invalidFloat.fullStop",
-    "The value you inputted is not a valid float."
+    "Die Zahl die Sie eingegeben haben ist keine Gleitkommazahl."
   ],
   [
     "capital.moveDown",
-    "Move down"
+    "Nach unten bewegen"
   ],
   [
     "capital.moveUp",
-    "Move up"
+    "Nach oben bewegen"
   ],
   [
     "capital.open",
-    "Open"
+    "Öffnen"
   ],
   [
     "capital.open.space",
-    "Open "
+    "Öffnen "
   ],
   [
     "capital.openFailed.space",
-    "Couldn't open file "
+    "Datei öffnen fehlgeschlagen "
   ],
   [
     "capital.openFrom",
-    "Open file"
+    "Öffne Datei"
   ],
   [
     "capital.openHint.fullStop",
-    "Escape to close dialogue. Enter to open."
+    "Abbruchtaste drücken zum schließen. Eingabetaste drücken zum öffnen."
   ],
   [
     "capital.save",
-    "Save"
+    "Speichern"
   ],
   [
     "capital.save.space",
-    "Save "
+    "Speichern "
   ],
   [
     "capital.saveFailed.space",
-    "Couldn't save file to "
+    "Datei konnte nicht gespeichert werden "
   ],
   [
     "capital.saveHint.fullStop",
-    "Escape to close dialogue. Enter to save."
+    "Abbruchtaste drücken zum schließen. Eingabetaste drücken zum speichern."
   ],
   [
     "capital.saveTo",
-    "Saving to"
+    "Speichern zu"
   ],
   [
     "capital.settings",
-    "Settings"
+    "Einstellungen"
   ],
   [
     "capital.tip",
-    "Tip"
+    "Hinweis"
   ],
   [
     "capital.title",
-    "Music box configurator"
+    "Spieluhrpartiturkonfigurator"
   ],
   [
     "caret.deleteLine.space",

@@ -5,7 +5,6 @@ pub mod functions;
 pub mod item_list;
 pub mod key_handler;
 pub mod state;
-pub mod ui_old;
 pub mod ui;
 
 use std::{default, io::Stdout, ops::Deref};
@@ -119,7 +118,8 @@ impl MusicBoxConfig {
             Some(t) => t,
             None => "en-GB".to_string(),
         };
-        let lang_map = LangMap::load_from_fs(&("./lang/".to_string() + &locale + ".json"));
+        let lang_map =
+            LangMap::load_from_fs(&("./lang/".to_string() + &locale + ".json")).unwrap_or_default();
 
         Self {
             args: args.clone(),
@@ -128,7 +128,7 @@ impl MusicBoxConfig {
             list_state: ListState::default().with_selected(Some(0usize)),
             buffers: Buffers {
                 path_buffer: path_buf,
-                editor_buffer: lang_map.val_at("capital.groupBuffer.fullStop"),
+                editor_buffer: lang_map.val_at("capital.groupBuffer.fullStop").to_owned(),
                 ..Default::default()
             },
             lang_map,
