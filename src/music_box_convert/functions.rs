@@ -24,7 +24,7 @@ use crate::{
         track::{self, Track},
     },
     prelude::*,
-    settings::Settings,
+    settings::{SettingsItem, SettingsMap},
     svg_writer::{circle::Circle, document::Document, line::Line},
     vec2::Vec2,
 };
@@ -120,7 +120,7 @@ impl MusicBoxConvert {
             }
         };
 
-        let deserialized: Settings = match serde_json::from_reader(BufReader::new(file)) {
+        let deserialized: SettingsMap = match serde_json::from_reader(BufReader::new(file)) {
             Ok(t) => t,
             Err(e) => return Err(Error::SerdeJson(Box::new(e))),
         };
@@ -216,7 +216,15 @@ impl MusicBoxConvert {
             music_box.vertical_note_distance(),
         );
 
-        if music_box.strip_height_mm >= self.settings.res()?.paper_size_y {
+        if music_box.strip_height_mm
+            >= **self
+                .settings
+                .res()?
+                .get("paper_size.y")
+                .res()?
+                .as_f64()
+                .res()?
+        {
             return Err(Error::Generic("Music box to large for paper size. Consider changing the paper size in the configurator.".to_string()));
         }
 
@@ -241,8 +249,20 @@ impl MusicBoxConvert {
                 continue;
             }
             if (event.abs - first_note_abs + overflow_notes) as f64 * self.scale.res()?.x
-                + self.settings.res()?.staff_offset_mm
-                > self.settings.res()?.paper_size_x
+                + **self
+                    .settings
+                    .res()?
+                    .get("staff_offset_mm")
+                    .res()?
+                    .as_f64()
+                    .res()?
+                > **self
+                    .settings
+                    .res()?
+                    .get("paper_size_x")
+                    .res()?
+                    .as_f64()
+                    .res()?
             {
                 overflow_sprockets =
                     self.draw_page(pages.last().unwrap(), overflow_notes, overflow_sprockets)?;
@@ -272,20 +292,58 @@ impl MusicBoxConvert {
 
         // Draw note lines
         for i in 0..self.music_box.res()?.note_count() {
-            let current_pos =
-                self.settings.res()?.staff_offset_mm + (i as f64 * self.scale.res()?.y);
+            let current_pos = **self
+                .settings
+                .res()?
+                .get("staff_offset_mm")
+                .res()?
+                .as_f64()
+                .res()?
+                + (i as f64 * self.scale.res()?.y);
             document.append(
                 Line::new_builder()
-                    .set_start(self.settings.res()?.staff_offset_mm, current_pos)
+                    .set_start(
+                        **self
+                            .settings
+                            .res()?
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
+                        current_pos,
+                    )
                     .set_end(
                         (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
                             as f64
                             * self.scale.res()?.x
-                            + self.settings.res()?.staff_offset_mm,
+                            + **self
+                                .settings
+                                .res()?
+                                .get("staff_offset_mm")
+                                .res()?
+                                .as_f64()
+                                .res()?,
                         current_pos,
                     )
-                    .set_stroke(self.settings.res()?.staff_line_colour.clone())
-                    .set_stroke_width(self.settings.res()?.staff_line_thickness_mm)
+                    .set_stroke(
+                        *self
+                            .settings
+                            .res()?
+                            .get("staff_line_colour")
+                            .res()?
+                            .as_string()
+                            .res()?
+                            .clone(),
+                    )
+                    .set_stroke_width(
+                        **self
+                            .settings
+                            .res()?
+                            .get("staff_line_thickness_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
+                    )
                     .finish(),
             );
         }
@@ -295,29 +353,71 @@ impl MusicBoxConvert {
         document.append(
             Line::new_builder()
                 .set_start(
-                    self.settings.res()?.staff_offset_mm,
-                    self.settings.res()?.staff_offset_mm
-                        - self
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_offset_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?,
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_offset_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?
+                        - **self
                             .settings
                             .res()?
-                            .staff_bounding_box_top_bottom_distance_mm,
+                            .get("staff_bounding_box_top_bottom_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
                 )
                 .set_end(
-                    self.settings.res()?.staff_offset_mm,
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_offset_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?,
                     self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
-                        + self.settings.res()?.staff_offset_mm
-                        + self
+                        + **self
                             .settings
                             .res()?
-                            .staff_bounding_box_top_bottom_distance_mm,
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?
+                        + **self
+                            .settings
+                            .res()?
+                            .get("staff_bounding_box_top_bottom_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
                 )
                 .set_stroke(
-                    self.settings
+                    *self
+                        .settings
                         .res()?
-                        .staff_bounding_box_left_right_colour
+                        .get("staff_bounding_box_left_right_colour")
+                        .res()?
+                        .as_string()
+                        .res()?
                         .clone(),
                 )
-                .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
+                .set_stroke_width(
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_bounding_box_thickness_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?,
+                )
                 .finish(),
         );
 
@@ -328,32 +428,74 @@ impl MusicBoxConvert {
                     (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
                         as f64
                         * self.scale.res()?.x
-                        + self.settings.res()?.staff_offset_mm,
-                    self.settings.res()?.staff_offset_mm
-                        - self
+                        + **self
                             .settings
                             .res()?
-                            .staff_bounding_box_top_bottom_distance_mm,
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_offset_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?
+                        - **self
+                            .settings
+                            .res()?
+                            .get("staff_bounding_box_top_bottom_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
                 )
                 .set_end(
                     (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
                         as f64
                         * self.scale.res()?.x
-                        + self.settings.res()?.staff_offset_mm,
-                    self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
-                        + self.settings.res()?.staff_offset_mm
-                        + self
+                        + **self
                             .settings
                             .res()?
-                            .staff_bounding_box_top_bottom_distance_mm,
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
+                    self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
+                        + **self
+                            .settings
+                            .res()?
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?
+                        + **self
+                            .settings
+                            .res()?
+                            .get("staff_bounding_box_top_bottom_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
                 )
                 .set_stroke(
-                    self.settings
+                    *self
+                        .settings
                         .res()?
-                        .staff_bounding_box_left_right_colour
+                        .get("staff_bounding_box_left_right_colour")
+                        .res()?
+                        .as_string()
+                        .res()?
                         .clone(),
                 )
-                .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
+                .set_stroke_width(
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_bounding_box_thickness_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?,
+                )
                 .finish(),
         );
 
@@ -361,31 +503,73 @@ impl MusicBoxConvert {
         document.append(
             Line::new_builder()
                 .set_start(
-                    self.settings.res()?.staff_offset_mm,
-                    self.settings.res()?.staff_offset_mm
-                        - self
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_offset_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?,
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_offset_m")
+                        .res()?
+                        .as_f64()
+                        .res()?
+                        - **self
                             .settings
                             .res()?
-                            .staff_bounding_box_top_bottom_distance_mm,
+                            .get("staff_bounding_box_top_bottom_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
                 )
                 .set_end(
                     (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
                         as f64
                         * self.scale.res()?.x
-                        + self.settings.res()?.staff_offset_mm,
-                    self.settings.res()?.staff_offset_mm
-                        - self
+                        + **self
                             .settings
                             .res()?
-                            .staff_bounding_box_top_bottom_distance_mm,
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_offset_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?
+                        - **self
+                            .settings
+                            .res()?
+                            .get("staff_bounding_box_top_bottom_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
                 )
                 .set_stroke(
-                    self.settings
+                    *self
+                        .settings
                         .res()?
-                        .staff_bounding_box_top_bottom_colour
+                        .get("staff_bounding_box_top_bottom_colour")
+                        .res()?
+                        .as_string()
+                        .res()?
                         .clone(),
                 )
-                .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
+                .set_stroke_width(
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_bounding_box_thickness_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?,
+                )
                 .finish(),
         );
 
@@ -393,33 +577,75 @@ impl MusicBoxConvert {
         document.append(
             Line::new_builder()
                 .set_start(
-                    self.settings.res()?.staff_offset_mm,
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_offset_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?,
                     self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
-                        + self.settings.res()?.staff_offset_mm
-                        + self
+                        + **self
                             .settings
                             .res()?
-                            .staff_bounding_box_top_bottom_distance_mm,
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?
+                        + **self
+                            .settings
+                            .res()?
+                            .get("staff_bounding_box_top_bottom_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
                 )
                 .set_end(
                     (notes.last().unwrap().abs - notes.first().unwrap().abs + overflow_notes)
                         as f64
                         * self.scale.res()?.x
-                        + self.settings.res()?.staff_offset_mm,
-                    self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
-                        + self.settings.res()?.staff_offset_mm
-                        + self
+                        + **self
                             .settings
                             .res()?
-                            .staff_bounding_box_top_bottom_distance_mm,
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
+                    self.scale.res()?.y * (self.music_box.res()?.note_count() as f64 - 1f64)
+                        + **self
+                            .settings
+                            .res()?
+                            .get("staff_offset_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?
+                        + **self
+                            .settings
+                            .res()?
+                            .get("staff_bounding_box_top_bottom_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
                 )
                 .set_stroke(
-                    self.settings
+                    *self
+                        .settings
                         .res()?
-                        .staff_bounding_box_top_bottom_colour
+                        .get("staff_bounding_box_top_bottom_colour")
+                        .res()?
+                        .as_string()
+                        .res()?
                         .clone(),
                 )
-                .set_stroke_width(self.settings.res()?.staff_bounding_box_thickness_mm)
+                .set_stroke_width(
+                    **self
+                        .settings
+                        .res()?
+                        .get("staff_bounding_box_thickness_mm")
+                        .res()?
+                        .as_f64()
+                        .res()?,
+                )
                 .finish(),
         );
 
@@ -439,13 +665,42 @@ impl MusicBoxConvert {
                 Circle::new_builder()
                     .set_centre(
                         (event.abs + overflow_notes - first_note_pos) as f64 * self.scale.res()?.x
-                            + self.settings.res()?.staff_offset_mm,
+                            + **self
+                                .settings
+                                .res()?
+                                .get("staff_offset_mm")
+                                .res()?
+                                .as_f64()
+                                .res()?,
                         (self.music_box.res()?.note_count() - note_index) as f64
                             * self.scale.res()?.y
-                            + self.settings.res()?.staff_offset_mm,
+                            + **self
+                                .settings
+                                .res()?
+                                .get("staff_offset_mm")
+                                .res()?
+                                .as_f64()
+                                .res()?,
                     )
-                    .set_radius(self.settings.res()?.note_hole_radius_mm)
-                    .set_fill(self.settings.res()?.note_hole_colour.clone())
+                    .set_radius(
+                        **self
+                            .settings
+                            .res()?
+                            .get("note_hole_radius_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?,
+                    )
+                    .set_fill(
+                        *self
+                            .settings
+                            .res()?
+                            .get("note_hole_colour")
+                            .res()?
+                            .as_string()
+                            .res()?
+                            .clone(),
+                    )
                     .finish(),
             );
 
@@ -456,31 +711,106 @@ impl MusicBoxConvert {
 
         info!("Drawing sprocket holes");
         // Draw sprocket holes
-        if self.settings.res()?.sprocket_hole_enable {
+        if **self
+            .settings
+            .res()?
+            .get("sprocket_hole_enable")
+            .res()?
+            .as_bool()
+            .res()?
+        {
             // Y position of the top holes
-            let top_y = self.settings.res()?.staff_offset_mm
-                - self.settings.res()?.sprocket_hole_distance_staff_mm;
+            let top_y = **self
+                .settings
+                .res()?
+                .get("staff_offset_mm")
+                .res()?
+                .as_f64()
+                .res()?
+                - **self
+                    .settings
+                    .res()?
+                    .get("sprocket_hole_distance_staff_mm")
+                    .res()?
+                    .as_f64()
+                    .res()?;
 
             // Y position of the bottom holes
-            let bot_y = self.settings.res()?.staff_offset_mm
+            let bot_y = **self
+                .settings
+                .res()?
+                .get("staff_offset_mm")
+                .res()?
+                .as_f64()
+                .res()?
                 + ((self.music_box.res()?.note_count() - 1) as f64 * self.scale.res()?.y)
-                + self.settings.res()?.sprocket_hole_distance_staff_mm;
+                + **self
+                    .settings
+                    .res()?
+                    .get("sprocket_hole_distance_staff_mm")
+                    .res()?
+                    .as_f64()
+                    .res()?;
 
-            let page_size_x = self.settings.res()?.paper_size_x;
+            let page_size_x = **self
+                .settings
+                .res()?
+                .get("paper_size_x")
+                .res()?
+                .as_f64()
+                .res()?;
             let sprocket_area =
                 self.scale.res()?.x * stop_point_sprocket as f64 - overflow_sprockets;
-            for i in
-                0..=(sprocket_area / self.settings.res()?.sprocket_hole_distance_mm).floor() as u64
+            for i in 0..=(sprocket_area
+                / **self
+                    .settings
+                    .res()?
+                    .get("sprocket_hole_distance_mm")
+                    .res()?
+                    .as_f64()
+                    .res()?)
+            .floor() as u64
             {
-                current_x = (self.settings.res()?.staff_offset_mm + overflow_sprockets)
-                    + (i as f64 * self.settings.res()?.sprocket_hole_distance_mm);
+                current_x = (**self
+                    .settings
+                    .res()?
+                    .get("staff_offset_mm")
+                    .res()?
+                    .as_f64()
+                    .res()?
+                    + overflow_sprockets)
+                    + (i as f64
+                        * **self
+                            .settings
+                            .res()?
+                            .get("sprocket_hole_distance_mm")
+                            .res()?
+                            .as_f64()
+                            .res()?);
 
                 // Top hole
                 document.append(
                     Circle::new_builder()
                         .set_centre(current_x, top_y)
-                        .set_radius(self.settings.res()?.note_hole_radius_mm)
-                        .set_fill(self.settings.res()?.sprocket_hole_colour.clone())
+                        .set_radius(
+                            **self
+                                .settings
+                                .res()?
+                                .get("note_hole_radius_mm")
+                                .res()?
+                                .as_f64()
+                                .res()?,
+                        )
+                        .set_fill(
+                            *self
+                                .settings
+                                .res()?
+                                .get("sprocket_hole_colour")
+                                .res()?
+                                .as_string()
+                                .res()?
+                                .clone(),
+                        )
                         .finish(),
                 );
 
@@ -488,8 +818,25 @@ impl MusicBoxConvert {
                 document.append(
                     Circle::new_builder()
                         .set_centre(current_x, bot_y)
-                        .set_radius(self.settings.res()?.note_hole_radius_mm)
-                        .set_fill(self.settings.res()?.sprocket_hole_colour.clone())
+                        .set_radius(
+                            **self
+                                .settings
+                                .res()?
+                                .get("note_hole_radius_mm")
+                                .res()?
+                                .as_f64()
+                                .res()?,
+                        )
+                        .set_fill(
+                            *self
+                                .settings
+                                .res()?
+                                .get("sprocket_hole_colour")
+                                .res()?
+                                .as_string()
+                                .res()?
+                                .clone(),
+                        )
                         .finish(),
                 );
             }
@@ -498,7 +845,21 @@ impl MusicBoxConvert {
         self.svg.push(document);
 
         // Return the overflow of the sprocket holes
-        Ok(self.settings.res()?.paper_size_x - self.settings.res()?.staff_offset_mm - current_x)
+        Ok(**self
+            .settings
+            .res()?
+            .get("paper_size_x")
+            .res()?
+            .as_f64()
+            .res()?
+            - **self
+                .settings
+                .res()?
+                .get("staff_offset_mm")
+                .res()?
+                .as_f64()
+                .res()?
+            - current_x)
     }
 
     /// Writes the documents to a file

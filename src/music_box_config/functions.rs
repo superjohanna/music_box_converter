@@ -22,7 +22,7 @@ use serde::{Serialize, Serializer};
 // Internal
 use super::{area::Areas, key_handler::KeyPressEvent};
 use super::{state::ApplicationState, ExlusiveBuffers, MusicBoxConfig};
-use crate::{prelude::*, settings::Settings};
+use crate::prelude::*;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub enum MainLoopAction {

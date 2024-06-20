@@ -11,7 +11,7 @@ use midly::Smf;
 // Internal
 use crate::{
     music::{music_box::MusicBox, track::Track},
-    settings::{self, Settings},
+    settings::{self, SettingsMap},
     svg_writer::document::Document,
     vec2::Vec2,
 };
@@ -23,7 +23,7 @@ pub struct MusicBoxConvert {
     /// The `MusicBox` that was chosen if any
     music_box: Option<MusicBox>,
     /// The `Settings` that were chosen if any
-    settings: Option<Settings>,
+    settings: Option<SettingsMap>,
     /// A list of svg documents.
     svg: Vec<Document>,
     /// The Track we are currently working on

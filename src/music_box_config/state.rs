@@ -8,7 +8,7 @@ use super::{
     key_handler::KeyPressEvent,
     ExlusiveBuffers, MusicBoxConfig,
 };
-use crate::{prelude::*, settings::Settings};
+use crate::{prelude::*, settings::SettingsMap};
 
 /// The current state of the application
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -406,15 +406,15 @@ impl MusicBoxConfig {
                 }
             };
 
-            let deserialized: Settings = match serde_json::from_reader(BufReader::new(file_handle))
-            {
-                Ok(t) => t,
-                Err(e) => {
-                    self.state = ApplicationState::GeneralError;
-                    self.buffers.error_buffer = Box::new(Error::Displayable(e.to_string()));
-                    return NOTHING;
-                }
-            };
+            let deserialized: SettingsMap =
+                match serde_json::from_reader(BufReader::new(file_handle)) {
+                    Ok(t) => t,
+                    Err(e) => {
+                        self.state = ApplicationState::GeneralError;
+                        self.buffers.error_buffer = Box::new(Error::Displayable(e.to_string()));
+                        return NOTHING;
+                    }
+                };
 
             self.settings = deserialized;
         }

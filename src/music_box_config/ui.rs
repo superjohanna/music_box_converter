@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 // Internal
-use super::{item_list::value::ValueType, state::ApplicationState, MusicBoxConfig};
+use super::{state::ApplicationState, MusicBoxConfig};
 use crate::prelude::*;
 
 const DEFAULT_BLOCK: Block = Block::new()

@@ -9,7 +9,6 @@ pub mod music_box_convert;
 pub mod path;
 pub mod prelude;
 pub mod settings;
-pub mod settings_new;
 pub mod svg_writer;
 pub mod vec2;
 

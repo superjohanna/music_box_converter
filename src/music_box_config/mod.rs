@@ -2,7 +2,6 @@ pub mod area;
 pub mod command;
 pub mod config_macro;
 pub mod functions;
-pub mod item_list;
 pub mod key_handler;
 pub mod state;
 pub mod ui;
@@ -21,9 +20,9 @@ use ratatui::{
 
 // Internal
 use self::{area::Areas, key_handler::KeyPressEvent};
-use self::{item_list::settings_item_list::SettingsItemList, state::ApplicationState};
+use self::{state::ApplicationState};
 use crate::prelude::*;
-use crate::{lang::LangMap, settings::Settings};
+use crate::{lang::LangMap, settings::SettingsMap};
 
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub enum ExlusiveBuffers {
@@ -98,15 +97,13 @@ pub struct MusicBoxConfig {
     /// The Terminal we draw to.
     terminal: Option<Terminal<CrosstermBackend<Stdout>>>,
     /// The current state of our settings. This is what gets serialized and what is deserialized when loading a file to.
-    settings: Settings,
+    settings: SettingsMap,
     /// Index of the item that is currently being edited (The one with the '>>' before it).
     index: usize,
     /// The number of settings + groups there are. We need this to stop the user if they are at the bottom of the list and press down.
     max_index: usize,
     /// The state of the list. This is somehow supposed to allow scrolling? I get to it once I implement scrolling.
     list_state: ListState,
-    /// This is a representation of the settings.
-    settings_item_list: SettingsItemList,
 }
 
 impl MusicBoxConfig {
